@@ -1,0 +1,312 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/inter";
+
+/* Product theme: monochrome and calm. White / grey surfaces, black primary (white in dark mode),
+   colour only where it carries meaning (good / bad / warning, chart series).
+   Light is the default; dark and "system" are in the profile menu → Appearance.
+   The accent is one token (--primary / --brand): change it here to re-brand the whole app. */
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-heading: var(--font-sans);
+    --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    /* Brand + status tokens usable as Tailwind colours (bg-brand, text-good-fg, border-bad/40 …) */
+    --color-brand: var(--brand);
+    --color-brand-fg: var(--brand-fg);
+    --color-good: var(--status-good);
+    --color-good-fg: var(--status-good-fg);
+    --color-warn: var(--status-warn);
+    --color-warn-fg: var(--status-warn-fg);
+    --color-serious: var(--status-serious);
+    --color-serious-fg: var(--status-serious-fg);
+    --color-bad: var(--status-bad);
+    --color-bad-fg: var(--status-bad-fg);
+    --color-info: var(--info);
+    --color-info-fg: var(--info-fg);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* ------------------------------------------------------------------ accent palettes
+   One accent colour drives buttons, the active menu item, links, focus rings and the main chart series.
+   Chosen in the profile menu → Appearance → Accent colour (stored per browser, set on <html data-accent>). */
+:root,
+:root[data-accent="indigo"] {
+    --a-50: #eef2ff; --a-100: #e0e7ff; --a-200: #c7d2fe; --a-300: #a5b4fc; --a-400: #818cf8;
+    --a-500: #6366f1; --a-600: #4f46e5; --a-700: #4338ca; --a-800: #3730a3; --a-900: #312e81;
+}
+:root[data-accent="blue"] {
+    --a-50: #eff6ff; --a-100: #dbeafe; --a-200: #bfdbfe; --a-300: #93c5fd; --a-400: #60a5fa;
+    --a-500: #3b82f6; --a-600: #2563eb; --a-700: #1d4ed8; --a-800: #1e40af; --a-900: #1e3a8a;
+}
+:root[data-accent="teal"] {
+    --a-50: #f0fdfa; --a-100: #ccfbf1; --a-200: #99f6e4; --a-300: #5eead4; --a-400: #2dd4bf;
+    --a-500: #14b8a6; --a-600: #0d9488; --a-700: #0f766e; --a-800: #115e59; --a-900: #134e4a;
+}
+:root[data-accent="violet"] {
+    --a-50: #f5f3ff; --a-100: #ede9fe; --a-200: #ddd6fe; --a-300: #c4b5fd; --a-400: #a78bfa;
+    --a-500: #8b5cf6; --a-600: #7c3aed; --a-700: #6d28d9; --a-800: #5b21b6; --a-900: #4c1d95;
+}
+:root[data-accent="rose"] {
+    --a-50: #fff1f2; --a-100: #ffe4e6; --a-200: #fecdd3; --a-300: #fda4af; --a-400: #fb7185;
+    --a-500: #f43f5e; --a-600: #e11d48; --a-700: #be123c; --a-800: #9f1239; --a-900: #881337;
+}
+
+/* ------------------------------------------------------------------ light (default) */
+:root {
+    /* Airy light design: near-white page with a hint of the accent, white cards, soft slate text */
+    --background: color-mix(in oklab, var(--a-50) 35%, #fbfbfd);
+    --foreground: #2a2f3a;
+    --card: #ffffff;
+    --card-foreground: #2a2f3a;
+    --popover: #ffffff;
+    --popover-foreground: #2a2f3a;
+    --primary: var(--a-600);
+    --primary-foreground: #ffffff;
+    --secondary: #f1f3f7;
+    --secondary-foreground: #2a2f3a;
+    --muted: #f3f4f8;
+    --muted-foreground: #737a89;
+    --accent: var(--a-50);
+    --accent-foreground: var(--a-700);
+    --destructive: #dc2626;
+    --border: #eaecf1;
+    --input: #e3e6ed;
+    --ring: var(--a-400);
+    --radius: 0.625rem;
+
+    --brand: var(--a-600);
+    --brand-fg: var(--a-700);
+    --info: #2563eb;
+    --info-fg: #1d4ed8;
+    --status-good: #16a34a;
+    --status-good-fg: #15803d;
+    --status-warn: #d97706;
+    --status-warn-fg: #92400e;
+    --status-serious: #ea580c;
+    --status-serious-fg: #9a3412;
+    --status-bad: #dc2626;
+    --status-bad-fg: #b91c1c;
+
+    /* Trend charts: this period in the accent, the previous period as a recessive slate reference line
+       (validated: lightness band, CVD + normal-vision separation, 3:1 contrast on the surface; the neutral is
+       deliberately low-chroma and always dashed + labelled) */
+    --chart-current: var(--a-600);
+    --chart-previous: #64748b;
+
+    /* Chart series: the main series uses the accent; others are distinct, calm hues */
+    --chart-1: var(--a-500);
+    --chart-2: #14b8a6;
+    --chart-3: #f59e0b;
+    --chart-4: #94a3b8;
+    --chart-5: #cbd5e1;
+
+    /* Heatmap ramp in the accent, low -> high */
+    --seq-1: var(--a-50);
+    --seq-2: var(--a-100);
+    --seq-3: var(--a-200);
+    --seq-4: var(--a-300);
+    --seq-5: var(--a-500);
+    --seq-6: var(--a-700);
+    --seq-7: var(--a-900);
+    --seq-ink-1: #1f2330; --seq-ink-2: #1f2330; --seq-ink-3: #1f2330; --seq-ink-4: #1f2330;
+    --seq-ink-5: #ffffff; --seq-ink-6: #ffffff; --seq-ink-7: #ffffff;
+    --seq-faint-outline: #9aa0ae;
+
+    /* Calendar layers (validated as a set: lightness band, normal-vision separation, 3:1 contrast;
+       every chip also carries its text label, so colour is never the only cue) */
+    --cal-uae: #047857;
+    --cal-india: #c2410c;
+    --cal-period: #7c3aed;
+    --cal-event: #0369a1;
+    --cal-aware: #be185d;
+    --cal-biz: #64748b;
+
+    --sidebar: #ffffff;
+    --sidebar-foreground: #545b6b;
+    --sidebar-primary: var(--a-600);
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: var(--a-50);
+    --sidebar-accent-foreground: var(--a-700);
+    --sidebar-border: #eceef3;
+    --sidebar-ring: var(--a-400);
+}
+
+/* ------------------------------------------------------------------ dark */
+.dark {
+    --background: #14161b;
+    --foreground: #eceef3;
+    --card: #1b1e25;
+    --card-foreground: #eceef3;
+    --popover: #1f2229;
+    --popover-foreground: #eceef3;
+    --primary: var(--a-500);
+    --primary-foreground: #ffffff;
+    --secondary: #262a33;
+    --secondary-foreground: #eceef3;
+    --muted: #22252d;
+    --muted-foreground: #9aa0ae;
+    --accent: color-mix(in oklab, var(--a-500) 18%, transparent);
+    --accent-foreground: var(--a-200);
+    --destructive: #f87171;
+    --border: #2a2e37;
+    --input: #333844;
+    --ring: var(--a-400);
+
+    --brand: var(--a-400);
+    --brand-fg: var(--a-300);
+    --info: #60a5fa;
+    --info-fg: #93c5fd;
+    --cal-uae: #34d399;
+    --cal-india: #fb923c;
+    --cal-period: #a78bfa;
+    --cal-event: #38bdf8;
+    --cal-aware: #f472b6;
+    --cal-biz: #94a3b8;
+    --status-good: #22c55e;
+    --status-good-fg: #4ade80;
+    --status-warn: #f59e0b;
+    --status-warn-fg: #fbbf24;
+    --status-serious: #f97316;
+    --status-serious-fg: #fb923c;
+    --status-bad: #ef4444;
+    --status-bad-fg: #f87171;
+
+    --chart-current: var(--a-500);
+    --chart-previous: #7d8ba1;
+    --chart-1: var(--a-400);
+    --chart-2: #2dd4bf;
+    --chart-3: #fbbf24;
+    --chart-4: #94a3b8;
+    --chart-5: #475569;
+
+    --seq-1: color-mix(in oklab, var(--a-500) 10%, #1b1e25);
+    --seq-2: color-mix(in oklab, var(--a-500) 22%, #1b1e25);
+    --seq-3: color-mix(in oklab, var(--a-500) 36%, #1b1e25);
+    --seq-4: color-mix(in oklab, var(--a-500) 52%, #1b1e25);
+    --seq-5: var(--a-500);
+    --seq-6: var(--a-400);
+    --seq-7: var(--a-200);
+    --seq-ink-1: #eceef3; --seq-ink-2: #eceef3; --seq-ink-3: #eceef3; --seq-ink-4: #ffffff;
+    --seq-ink-5: #ffffff; --seq-ink-6: #14161b; --seq-ink-7: #14161b;
+    --seq-faint-outline: #4b5262;
+
+    --sidebar: #181a20;
+    --sidebar-foreground: #c4c8d2;
+    --sidebar-primary: var(--a-500);
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: color-mix(in oklab, var(--a-500) 18%, transparent);
+    --sidebar-accent-foreground: var(--a-200);
+    --sidebar-border: #23262e;
+    --sidebar-ring: var(--a-400);
+}
+
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    /* The app's own Appearance setting (Light by default, or Dark) always decides the colours:
+       - "only light" forbids browsers' automatic darkening of the light design (Edge/Chrome "dark mode for websites")
+       - forced-color-adjust: none keeps the app's colours when Windows uses a contrast theme */
+    color-scheme: only light;
+    forced-color-adjust: none;
+  }
+  html.dark {
+    color-scheme: only dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+}
+
+/* ================================================================== quiet design layer
+   Old decorative classes are kept as plain styles so existing pages keep working. */
+
+/* Cards: white on the soft grey page, hairline border and a very light shadow */
+[data-slot="card"] {
+  background: var(--card);
+  box-shadow: 0 0 0 1px var(--border), 0 1px 3px rgba(16, 24, 40, 0.05);
+  --tw-ring-color: transparent;
+}
+.dark [data-slot="card"] {
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+/* Tabs: soft track, the active tab is a white raised chip */
+[data-slot="tabs-list"][data-variant="default"] {
+  background: var(--secondary);
+}
+
+/* Sidebar: the active item is a light accent pill with accent text */
+[data-slot="sidebar-menu-button"][data-active],
+[data-slot="sidebar-menu-sub-button"][data-active] {
+  font-weight: 500;
+}
+[data-slot="sidebar-menu-button"][data-active] svg {
+  color: var(--sidebar-accent-foreground);
+}
+
+/* Decorative helpers from the previous design */
+.app-backdrop { display: none; }
+.brand-glow { background: none; }
+.text-gradient { color: var(--foreground); }
+.bg-brand-gradient { background-color: var(--primary); color: var(--primary-foreground); }
+.bg-brand-soft { background-color: var(--accent); }
+.hero-surface { background: var(--card); }
+.tile-glow { display: none; }
+.signin-orb { display: none; }
+
+/* Motion: a short, subtle fade only */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.page-enter { animation: fade-in 160ms ease-out both; }
+.stagger > * { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter { animation: none; }
+}

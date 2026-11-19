@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/brand/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <!-- The app's own Appearance setting decides light or dark; browsers must not auto-darken it -->
+    <meta name="color-scheme" content="only light" />
+    <!-- The Dark Reader extension ignores color-scheme; this tag tells it the site has its own dark mode -->
+    <meta name="darkreader-lock" />
+    <title>avaibe · LinkedIn Intelligence</title>
+    <script>
+      // Apply the saved appearance before first paint to avoid a flash. Light is the default;
+      // "system" follows the computer's setting. ?theme=light|dark|system in the address also sets it.
+      try {
+        var q = new URLSearchParams(location.search).get('theme')
+        if (q === 'light' || q === 'dark' || q === 'system') localStorage.setItem('app.look', q)
+      } catch (e) {}
+      try {
+        var t = localStorage.getItem('app.look') || 'light'
+        var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) document.documentElement.classList.add('dark')
+        document.documentElement.dataset.accent = localStorage.getItem('app.accent') || 'indigo'
+      } catch (e) {}
+
+      // The app has its own light and dark designs. Dark-mode extensions (Dark Reader) inject styles that
+      // repaint every page; the darkreader-lock tag above asks them not to, and this removes anything that
+      // is still injected (including the early "fallback" style), so the chosen Appearance always wins.
+      ;(function () {
+        var root = document.documentElement
+        function clean() {
+          var injected = document.querySelectorAll('style.darkreader, link.darkreader')
+          for (var i = 0; i < injected.length; i++) injected[i].remove()
+          if (root.hasAttribute('data-darkreader-mode')) root.removeAttribute('data-darkreader-mode')
+          if (root.hasAttribute('data-darkreader-scheme')) root.removeAttribute('data-darkreader-scheme')
+        }
+        clean()
+        try {
+          var watch = new MutationObserver(clean)
+          watch.observe(root, { childList: true, attributes: true, attributeFilter: ['data-darkreader-mode', 'data-darkreader-scheme'] })
+          var watchHead = function () {
+            if (document.head) watch.observe(document.head, { childList: true })
+          }
+          watchHead()
+          document.addEventListener('DOMContentLoaded', function () {
+            watchHead()
+            clean()
+          })
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
