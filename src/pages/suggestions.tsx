@@ -1,27 +1,7 @@
 import { createContext, useContext, useState, type FormEvent } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Bot,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  CircleAlert,
-  Clock3,
-  Copy,
-  FilePlus2,
-  FileText,
-  Lightbulb,
-  Megaphone,
-  SearchCheck,
-  Sparkles,
-  Undo2,
-  Users,
-  Wand2,
-  type LucideIcon,
-} from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Bot, CalendarClock, CheckCircle2, ChevronDown, ChevronRight, CircleAlert, Clock3, Copy, FilePlus2, FileText, Lightbulb, Megaphone, SearchCheck, Sparkles, type LucideIcon, Undo2, Users, Wand2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -622,7 +602,7 @@ function PlannedFeatures() {
         title="Planned features"
         description="Claude features planned next, each with the same why / boost / risk explanation. This page is a reminder and can be removed later."
       />
-      <Section title="Coming next" description={claude?.configured ? `Model: ${claude.model}` : 'These need the Claude API key.'}>
+      <Section icon={CalendarClock} title="Coming next" description={claude?.configured ? `Model: ${claude.model}` : 'These need the Claude API key.'}>
         <ul className="grid gap-4 sm:grid-cols-2">
           {PLANNED.map((p) => (
             <li key={p.title} className="flex gap-3">

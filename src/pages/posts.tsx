@@ -216,7 +216,7 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
           {rows.length ? 'No posts match these filters.' : <>No posts yet. <Link to="/posts/new" className="underline">Add one</Link> or <Link to="/import" className="underline">import LinkedIn’s export</Link>.</>}
         </EmptyState>
       ) : (
-        <div className="overflow-hidden rounded-xl bg-card ring-1 ring-border">
+        <div className="overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] border-collapse text-sm">
               <thead>

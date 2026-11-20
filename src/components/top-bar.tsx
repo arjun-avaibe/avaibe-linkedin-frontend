@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { addDays, format, parseISO } from 'date-fns'
 import { toast } from 'sonner'
-import { AlertTriangle, Bell, CalendarDays, Camera, ChevronDown, Hourglass, LogOut, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, Bell, CalendarDays, Camera, ChevronDown, Clock, Hourglass, Link2, LogOut, Monitor, Moon, Sun, Trash2, UserRound } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   DropdownMenu,
@@ -15,9 +15,16 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ACCENTS, useTheme, type Accent, type Theme } from '@/context/theme'
+import { useTz, ZONES, type ZoneId } from '@/context/timezone'
 import { UserAvatar } from '@/components/user-avatar'
 import { todayUae, ymd } from '@/components/period'
 import { useAccount } from '@/context/account'
@@ -173,12 +180,20 @@ function Notifications() {
   )
 }
 
-// ---------------------------------------------------------------- profile picture (personal things only)
+// ---------------------------------------------------------------- profile picture: everything about you
+
+const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+  { value: 'system', label: 'System', icon: Monitor },
+]
 
 function ProfileButton() {
   const me = useMe()
   const auth = useAuth()
   const navigate = useNavigate()
+  const { theme, setTheme, accent, setAccent } = useTheme()
+  const tz = useTz()
   const file = useRef<HTMLInputElement>(null)
   const canSignOut = auth.enabled || !!auth.demoEmail
 
@@ -206,17 +221,22 @@ function ProfileButton() {
           <UserAvatar className="size-9 ring-2 ring-card" />
           <ChevronDown className="size-4 text-muted-foreground" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-60">
+        <DropdownMenuContent align="end" className="w-64">
           <DropdownMenuGroup>
             <DropdownMenuLabel className="flex items-center gap-3 text-foreground">
               <UserAvatar className="size-10" />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-medium">{me.name}</span>
-                {me.email && <span className="block truncate text-xs font-normal text-muted-foreground">{me.email}</span>}
+                <span className="block truncate text-xs font-normal text-muted-foreground">
+                  {[me.role ?? (me.signedIn ? null : 'Local mode'), me.email].filter(Boolean).join(' · ')}
+                </span>
               </span>
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate('/profile')}>
+            <UserRound /> Profile
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => file.current?.click()}>
             <Camera /> {me.photo ? 'Change photo' : 'Add a photo'}
           </DropdownMenuItem>
@@ -225,9 +245,54 @@ function ProfileButton() {
               <Trash2 /> Remove photo
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onClick={() => navigate('/profile')}>
-            <UserRound /> Edit profile
-          </DropdownMenuItem>
+          {auth.can('approver') && (
+            <DropdownMenuItem onClick={() => navigate('/linkedin')}>
+              <Link2 /> LinkedIn connections
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              {theme === 'dark' ? <Moon /> : theme === 'system' ? <Monitor /> : <Sun />} Appearance
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="w-48">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Mode</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as Theme)}>
+                  {THEME_OPTIONS.map((t) => (
+                    <DropdownMenuRadioItem key={t.value} value={t.value}>
+                      <t.icon /> {t.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Accent colour</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={accent} onValueChange={(v) => setAccent(v as Accent)}>
+                  {ACCENTS.map((a) => (
+                    <DropdownMenuRadioItem key={a.value} value={a.value} closeOnClick={false}>
+                      <span className="size-3.5 rounded-full" style={{ background: a.swatch }} aria-hidden /> {a.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              <Clock /> Time zone <span className="ml-auto pl-2 text-xs text-muted-foreground">{tz.label}</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuRadioGroup value={tz.zone} onValueChange={(v) => tz.setZone(v as ZoneId)}>
+                {ZONES.map((z) => (
+                  <DropdownMenuRadioItem key={z.id} value={z.id}>
+                    {z.long}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           {canSignOut && (
             <>
               <DropdownMenuSeparator />

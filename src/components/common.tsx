@@ -1,26 +1,57 @@
 import type { ReactNode } from 'react'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, HelpCircle, Sparkles, type LucideIcon } from 'lucide-react'
+import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronRight, HelpCircle, Sparkles, type LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Classification, Shares, Trend } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
+/** Page title, as on Create post: a breadcrumb (section › page), a large bold title and one line of description */
 export function PageHeader({ title, description, actions, eyebrow }: {
   title: string
   description?: ReactNode
   actions?: ReactNode
+  /** The sidebar section this page sits in; shown as a breadcrumb */
   eyebrow?: string
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        {eyebrow && <div className="mb-1 text-xs text-muted-foreground">{eyebrow}</div>}
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        {eyebrow && eyebrow !== title && (
+          <nav aria-label="Breadcrumb" className="mb-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+            <span>{eyebrow}</span>
+            <ChevronRight className="size-3.5" />
+            <span className="text-foreground">{title}</span>
+          </nav>
+        )}
+        <h1 className="text-[28px] leading-tight font-bold tracking-tight">{title}</h1>
         {description && <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
     </div>
+  )
+}
+
+/** A card's heading in the Create post style: icon tile, title, optional subtitle and something on the right */
+export function CardHeading({ icon, title, sub, action }: { icon: LucideIcon; title: ReactNode; sub?: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3">
+      <IconTile icon={icon} />
+      <div className="min-w-0 flex-1 pt-0.5">
+        <div className="text-base leading-snug font-semibold">{title}</div>
+        {sub && <div className="mt-0.5 text-xs text-muted-foreground">{sub}</div>}
+      </div>
+      {action}
+    </div>
+  )
+}
+
+/** The small rounded icon tile used in card headings */
+export function IconTile({ icon: Icon, className }: { icon: LucideIcon; className?: string }) {
+  return (
+    <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary', className)}>
+      <Icon className="size-4.5" />
+    </span>
   )
 }
 
@@ -48,19 +79,24 @@ export function StatTile({ label, value, hint, icon: Icon }: {
   )
 }
 
-export function Section({ title, description, actions, children, className }: {
+export function Section({ title, description, actions, children, className, icon }: {
   title: ReactNode
   description?: ReactNode
   actions?: ReactNode
   children: ReactNode
   className?: string
+  /** Shown as a small icon tile before the title, as on Create post */
+  icon?: LucideIcon
 }) {
   return (
     <Card className={className}>
-      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
-        <div>
-          <CardTitle>{title}</CardTitle>
-          {description && <CardDescription className="mt-1">{description}</CardDescription>}
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 border-b">
+        <div className="flex min-w-0 items-start gap-3">
+          {icon && <IconTile icon={icon} />}
+          <div className={cn('min-w-0', icon && 'pt-0.5')}>
+            <CardTitle>{title}</CardTitle>
+            {description && <CardDescription className="mt-1">{description}</CardDescription>}
+          </div>
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
       </CardHeader>
@@ -71,7 +107,7 @@ export function Section({ title, description, actions, children, className }: {
 
 export function EmptyState({ children, icon: Icon = Sparkles }: { children: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center text-sm text-muted-foreground">
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed bg-card/50 px-6 py-10 text-center text-sm text-muted-foreground">
       <Icon className="size-5" />
       <div>{children}</div>
     </div>

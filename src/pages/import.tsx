@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
-import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Upload } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, FileText, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -65,7 +65,7 @@ function LinkedInExportSection({ accountId, accountName, accountKind }: { accoun
     )
 
   return (
-    <Section
+    <Section icon={FileSpreadsheet}
       title={`LinkedIn page export → ${accountName ?? '…'}`}
       description="On LinkedIn: company page → Analytics → Content, Followers and Visitors → Export. Upload the files as they are (.xls or .xlsx). Importing again later updates the same posts instead of duplicating them."
     >
@@ -233,7 +233,7 @@ function CsvSection({ accountId, accountName }: { accountId?: number; accountNam
   const imp = useImportCsv(accountId ?? 0)
 
   return (
-    <Section
+    <Section icon={FileText}
       title="App CSV template"
       description="For posts LinkedIn can't export (e.g. founder profiles) or snapshots kept elsewhere. One row = one post at one checkpoint; rows with the same post URL update that post."
     >

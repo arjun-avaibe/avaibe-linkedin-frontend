@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { format, parseISO } from 'date-fns'
-import { ChevronDown, CircleAlert, CircleCheck, FlaskConical, Info } from 'lucide-react'
+import { ChevronDown, CircleAlert, CircleCheck, Clock, FlaskConical, Info } from 'lucide-react'
 import { Section, SimpleSelect } from '@/components/common'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useTz } from '@/context/timezone'
@@ -35,7 +35,7 @@ export function TimingModelSection({ accountId }: { accountId?: number }) {
   })
 
   return (
-    <Section
+    <Section icon={Clock}
       title="Best time to post"
       description="Judges each post against what it was expected to get for its format, topic and the page’s size at the time, so only the effect of timing is left. Holidays, Ramadan and summer are measured separately, and the method tests itself on newer posts."
       actions={<SimpleSelect label="Judge by" value={metric} onChange={setMetric} options={METRICS} />}

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { Trash2, UserPlus } from 'lucide-react'
+import { Star, Trash2, UserPlus, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,7 +65,7 @@ export function TeamTab() {
         </div>
       )}
 
-      <Section
+      <Section icon={Users}
         title="Team"
         description="Only people listed here can sign in, using their AVAIBE Microsoft account. Admins can always switch accounts."
       >
@@ -152,7 +152,7 @@ export function TeamTab() {
 
       <AddMember onAdded={refresh} />
 
-      <Section
+      <Section icon={Star}
         title="Default account"
         description="What people without “Can switch accounts” see. Normally the AVAIBE company page."
       >
@@ -192,7 +192,7 @@ function AddMember({ onAdded }: { onAdded: () => void }) {
   }
 
   return (
-    <Section title="Add a person" description="They sign in with this exact Microsoft work email.">
+    <Section icon={UserPlus} title="Add a person" description="They sign in with this exact Microsoft work email.">
       <form onSubmit={submit} className="grid gap-3 md:grid-cols-2">
         <div>
           <Label className="mb-1.5 block">Work email *</Label>

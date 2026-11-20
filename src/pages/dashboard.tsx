@@ -1,17 +1,17 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { format, parseISO } from 'date-fns'
-import { ChevronRight, Info } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { BellRing, ChevronRight, Eye, Info, MapPin, MousePointerClick, Trophy, UserPlus, UserRound, Users, type LucideIcon } from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState, PageHeader } from '@/components/common'
-import { ChangeTag, engagementOf, Mini, pt, rel, totals, useSortedDaily, usePeriod, type Change } from '@/components/period'
+import { CardHeading, EmptyState, PageHeader } from '@/components/common'
+import { engagementOf, Mini, pt, rel, totals, useSortedDaily, usePeriod, type Change } from '@/components/period'
 import { inRange, TimeRangePicker, type TimeRange } from '@/components/time-range'
 import { useAccount } from '@/context/account'
 import { useAccountDoc, useDueSnapshots, useOverview, usePageAudience, usePageDaily, usePlanned, usePosts } from '@/hooks/queries'
 import { AREAS, areaPath, itemState, useSuggestionItems } from '@/hooks/suggestion-items'
-import type { Account } from '@/lib/api'
-import { fmtNumber, fmtPct } from '@/lib/format'
+import type { Account, PageAudienceSnapshot, Shares } from '@/lib/api'
+import { FORMAT_LABELS, fmtNumber, fmtPct } from '@/lib/format'
 import { needsAction } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 
@@ -49,7 +49,7 @@ export function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader title="Dashboard" description={account ? `${account.name}${founders.length ? ` and its ${founders.length} founder profile${founders.length === 1 ? '' : 's'}` : ''}` : undefined} actions={<TimeRangePicker value={range} onChange={setRange} />} />
+      <PageHeader eyebrow="Overview" title="Dashboard" description={account ? `${account.name}${founders.length ? ` and its ${founders.length} founder profile${founders.length === 1 ? '' : 's'}` : ''}` : undefined} actions={<TimeRangePicker value={range} onChange={setRange} />} />
 
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-5">
@@ -70,48 +70,87 @@ export function DashboardPage() {
             {stats.partial && <> · LinkedIn data so far runs to {format(parseISO(stats.lastData), 'd MMM yyyy')}</>}
           </p>
 
-          {/* Headline numbers: a glance, each opening the matching Data tab for the detail */}
+          {/* Headline numbers: each shows what it's compared with, and opens the matching Data tab */}
           <div className={cn('grid gap-3 sm:grid-cols-2', account?.kind === 'company' ? 'lg:grid-cols-5' : 'lg:grid-cols-4')}>
-            <Kpi to={dataLink('content', 'cm=impressions')} label="Impressions" value={fmtNumber(stats.cur.impressions)} change={rel(stats.cur.impressions, stats.prev?.impressions)} hint="All posts, counted on the day they were seen" />
-            <Kpi to={dataLink('content', 'cm=engagements')} label="Engagement rate" value={fmtPct(engagementOf(stats.cur))} change={pt(engagementOf(stats.cur), stats.prev ? engagementOf(stats.prev) : null)} hint="Clicks, reactions, comments and reposts ÷ impressions" />
+            <Kpi
+              to={dataLink('content', 'cm=impressions')}
+              icon={Eye}
+              label="Impressions"
+              value={fmtNumber(stats.cur.impressions)}
+              change={rel(stats.cur.impressions, stats.prev?.impressions)}
+              note={stats.prev ? `vs. ${fmtNumber(stats.prev.impressions)} last period` : 'No earlier period to compare'}
+            />
+            <Kpi
+              to={dataLink('content', 'cm=engagements')}
+              icon={MousePointerClick}
+              label="Engagement rate"
+              value={fmtPct(engagementOf(stats.cur))}
+              change={pt(engagementOf(stats.cur), stats.prev ? engagementOf(stats.prev) : null)}
+              note={stats.prev ? `vs. ${fmtPct(engagementOf(stats.prev))} last period` : 'No earlier period to compare'}
+            />
             {account?.kind === 'company' && (
               <Kpi
                 to={dataLink('visitors', 'vm=unique_visitors')}
+                icon={Users}
                 label="Page visitors"
                 value={fmtNumber(stats.cur.unique_visitors)}
                 change={rel(stats.cur.unique_visitors, stats.prev?.unique_visitors)}
                 // LinkedIn counts unique visitors per day; the period adds those up
-                hint={`Unique each day, added up${uae.visitors != null ? ` · ${fmtPct(uae.visitors)} from the UAE` : ''}`}
+                note={stats.prev ? `vs. ${fmtNumber(stats.prev.unique_visitors)} last period` : 'No earlier period to compare'}
               />
             )}
-            <Kpi to={dataLink('followers')} label="New followers" value={fmtNumber(stats.cur.new_followers)} change={rel(stats.cur.new_followers, stats.prev?.new_followers)} hint={`Over ${stats.len} days`} />
+            <Kpi
+              to={dataLink('followers')}
+              icon={UserPlus}
+              label="New followers"
+              value={fmtNumber(stats.cur.new_followers)}
+              change={rel(stats.cur.new_followers, stats.prev?.new_followers)}
+              note={stats.prev ? `vs. ${fmtNumber(stats.prev.new_followers)} last period` : 'No earlier period to compare'}
+            />
             {account?.kind === 'company' ? (
-              <Kpi to={dataLink('followers')} label="UAE share of followers" value={fmtPct(uae.share)} change={null}
-                hint={uae.asOf ? `As of ${format(parseISO(uae.asOf), 'd MMM')}` : 'Import or sync follower demographics'} />
+              <Kpi
+                to={dataLink('followers')}
+                icon={MapPin}
+                label="UAE share of followers"
+                value={fmtPct(uae.share)}
+                change={null}
+                note={uae.asOf ? `As of ${format(parseISO(uae.asOf), 'd MMM')}` : 'Import or sync follower demographics'}
+              />
             ) : (
-              <Kpi to={dataLink('content', 'cm=clicks')} label="Clicks" value={fmtNumber(stats.cur.clicks)} change={rel(stats.cur.clicks, stats.prev?.clicks)} hint="Link clicks" />
+              <Kpi
+                to={dataLink('content', 'cm=clicks')}
+                icon={MousePointerClick}
+                label="Clicks"
+                value={fmtNumber(stats.cur.clicks)}
+                change={rel(stats.cur.clicks, stats.prev?.clicks)}
+                note={stats.prev ? `vs. ${fmtNumber(stats.prev.clicks)} last period` : 'No earlier period to compare'}
+              />
             )}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Click a number for its chart and the reasons behind it in Data.</p>
         </>
       )}
 
-      {/* What to do next comes before the detail */}
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <Attention accountId={id} />
-        <BestPosts accountId={id} range={range} />
+      {/* Two-thirds: posts and founders. One-third: who the audience is, and what needs doing */}
+      <div className="mt-5 grid items-start gap-4 lg:grid-cols-3">
+        <div className="space-y-4 lg:col-span-2">
+          <BestPosts accountId={id} range={range} />
+          {founders.length > 0 && win && (
+            <section>
+              <h2 className="mb-1 text-base font-semibold">Founders</h2>
+              <p className="mb-3 text-xs text-muted-foreground">All their posts, including ones not published through this app, for the same period.</p>
+              <div className="grid gap-4 md:grid-cols-2">
+                {founders.map((f) => (
+                  <FounderCard key={f.id} founder={f} from={win.from} to={win.to} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+        <div className="space-y-4">
+          {account?.kind === 'company' && <AudienceCard audience={audience} followersLink={dataLink('followers')} visitorsLink={dataLink('visitors')} />}
+          <Attention accountId={id} />
+        </div>
       </div>
-      {founders.length > 0 && win && (
-        <section className="mt-6">
-          <h2 className="mb-1 text-sm font-medium">Founders</h2>
-          <p className="mb-3 text-xs text-muted-foreground">All their posts, including ones not published through this app, for the same period.</p>
-          <div className="grid gap-3 md:grid-cols-2">
-            {founders.map((f) => (
-              <FounderCard key={f.id} founder={f} from={win.from} to={win.to} />
-            ))}
-          </div>
-        </section>
-      )}
 
     </div>
 
@@ -120,25 +159,113 @@ export function DashboardPage() {
 
 // ---------------------------------------------------------------- headline tiles
 
-function Kpi({ to, label, value, change, hint }: { to: string; label: string; value: string; change: Change | null; hint: string }) {
+function Kpi({ to, icon: Icon, label, value, change, note }: { to: string; icon: LucideIcon; label: string; value: string; change: Change | null; note: string }) {
   return (
-    <Link to={to} className="group block rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+    <Link to={to} className="group block rounded-2xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
       <Card size="sm" className="h-full transition-shadow group-hover:shadow-md">
         <CardHeader>
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center justify-between gap-2 text-sm font-medium">
             {label}
-            <ChevronRight className="size-4 opacity-0 transition-opacity group-hover:opacity-100" />
+            <Icon className="size-4 shrink-0 text-primary" aria-hidden />
           </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-3xl font-semibold tracking-tight tabular-nums">{value}</span>
-            <ChangeTag c={change} />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="text-3xl font-bold tracking-tight tabular-nums">{value}</span>
+            <ChangePill c={change} />
           </div>
+          <div className="mt-1 text-xs text-muted-foreground">{note}</div>
         </CardHeader>
-        <CardContent className="text-xs text-muted-foreground">{hint}</CardContent>
       </Card>
     </Link>
   )
 }
+
+/** The change as a small coloured pill: ▲ green up, ▼ red down, grey when about the same */
+function ChangePill({ c }: { c: Change | null }) {
+  if (!c) return null
+  const tone = c.dir === 'up' ? 'bg-good/15 text-good-fg' : c.dir === 'down' ? 'bg-bad/10 text-bad-fg' : 'bg-muted text-muted-foreground'
+  return (
+    <span className={cn('inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums', tone)}>
+      {c.dir === 'up' ? '▲' : c.dir === 'down' ? '▼' : '•'} {c.text.replace(/^[+-]/, '')}
+    </span>
+  )
+}
+
+// ---------------------------------------------------------------- who the audience is (AVAIBE's target groups)
+
+const GROUPS: { key: keyof Shares; label: string; hint: string; color: string }[] = [
+  { key: 'uae_share', label: 'In the UAE', hint: 'Located in the UAE', color: 'var(--chart-1)' },
+  { key: 'decision_maker_share', label: 'Decision-makers', hint: 'Owners, CXOs, VPs, directors', color: 'var(--chart-2)' },
+  { key: 'education_share', label: 'Education sector', hint: 'Schools, e-learning, education', color: 'var(--chart-3)' },
+  { key: 'tech_share', label: 'Technology professionals', hint: 'Engineering and IT roles', color: 'var(--chart-4)' },
+  { key: 'partner_share', label: 'Potential partners', hint: 'Business development and consulting', color: 'var(--chart-5)' },
+]
+
+function AudienceCard({ audience, followersLink, visitorsLink }: { audience: PageAudienceSnapshot[]; followersLink: string; visitorsLink: string }) {
+  const [kind, setKind] = useState<'followers' | 'visitors'>('followers')
+  const latest = audience.filter((a) => a.audience === kind).sort((a, b) => a.as_of.localeCompare(b.as_of)).at(-1)
+  return (
+    <Card>
+      <CardHeader>
+        <CardHeading
+          icon={Users}
+          title="Who your audience is"
+          sub={latest ? `${latest.total != null ? `${fmtNumber(latest.total)} ${kind} · ` : ''}as of ${format(parseISO(latest.as_of), 'd MMM')}` : undefined}
+        />
+        <div role="tablist" aria-label="Audience" className="mt-3 flex w-fit rounded-lg bg-secondary p-1">
+          {(['followers', 'visitors'] as const).map((k) => (
+            <button
+              key={k}
+              role="tab"
+              type="button"
+              aria-selected={kind === k}
+              onClick={() => setKind(k)}
+              className={cn('rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors', kind === k ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {!latest ? (
+          <p className="text-sm text-muted-foreground">
+            No {kind} breakdown yet. <Link to="/import" className="underline">Import LinkedIn’s export</Link>.
+          </p>
+        ) : (
+          <>
+            <ul className="space-y-3.5">
+              {GROUPS.map((g) => {
+                const share = latest.shares[g.key] ?? null
+                const count = share != null && latest.total != null ? Math.round(share * latest.total) : null
+                return (
+                  <li key={g.key} title={g.hint}>
+                    <div className="flex items-baseline justify-between gap-3 text-sm">
+                      <span className="font-medium">{g.label}</span>
+                      <span className="tabular-nums">
+                        {count != null && <span className="font-semibold">{fmtNumber(count)}</span>}
+                        <span className="ml-2 inline-block w-11 text-right text-xs text-muted-foreground">{share == null ? '—' : fmtPct(share)}</span>
+                      </span>
+                    </div>
+                    <div className="mt-1.5 h-2 rounded-full bg-muted">
+                      <div className="h-2 rounded-full" style={{ width: `${Math.max(share ? 2 : 0, (share ?? 0) * 100)}%`, background: g.color }} />
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground">
+              Groups overlap, so they don’t add up to 100%. LinkedIn lists only its biggest values, so these are minimums.{' '}
+              <Link to={kind === 'followers' ? followersLink : visitorsLink} className="underline">
+                Full breakdown
+              </Link>
+            </p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 // ---------------------------------------------------------------- founders: all their posts
 
 function FounderCard({ founder, from, to }: { founder: Account; from: string; to: string }) {
@@ -150,8 +277,7 @@ function FounderCard({ founder, from, to }: { founder: Account; from: string; to
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium">{founder.name}</CardTitle>
-        {doc?.data.followers != null && <div className="text-xs text-muted-foreground">{fmtNumber(doc.data.followers)} followers</div>}
+        <CardHeading icon={UserRound} title={founder.name} sub={doc?.data.followers != null ? `${fmtNumber(doc.data.followers)} followers` : undefined} />
       </CardHeader>
       <CardContent className="space-y-4">
         <dl className="grid grid-cols-3 gap-x-4 gap-y-3">
@@ -196,7 +322,7 @@ function Attention({ accountId }: { accountId?: number }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium">Needs your attention</CardTitle>
+        <CardHeading icon={BellRing} title="Needs your attention" />
       </CardHeader>
       <CardContent>
         {rows.length === 0 ? (
@@ -226,36 +352,58 @@ function BestPosts({ accountId, range }: { accountId?: number; range: TimeRange 
   const { data: posts = [] } = usePosts(accountId, { checkpoint: probe?.suggested_checkpoint ?? '24h' })
   const best = posts
     .filter((p) => inRange(p.published_at, range))
-    .map((p) => ({ p, imp: p.snapshots[p.snapshots.length - 1]?.impressions ?? null }))
-    .filter((x) => x.imp != null)
-    .sort((a, b) => (b.imp ?? 0) - (a.imp ?? 0))
-    .slice(0, 3)
+    .map((p) => ({ p, s: p.snapshots[p.snapshots.length - 1] }))
+    .filter((x) => x.s?.impressions != null)
+    .sort((a, b) => (b.s!.impressions ?? 0) - (a.s!.impressions ?? 0))
+    .slice(0, 5)
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-sm font-medium">Best posts in this period</CardTitle>
-        <Link to="/posts" className="text-xs text-muted-foreground hover:text-foreground">
-          All posts
-        </Link>
+      <CardHeader>
+        <CardHeading
+          icon={Trophy}
+          title="Best posts in this period"
+          sub="Impressions so far; newer posts have had less time to collect them."
+          action={
+            <Link to="/data?tab=posts" className="pt-1 text-xs text-muted-foreground hover:text-foreground">
+              All posts
+            </Link>
+          }
+        />
       </CardHeader>
       <CardContent>
         {best.length === 0 ? (
           <p className="text-sm text-muted-foreground">No posts with numbers in this period.</p>
         ) : (
-          <ol className="-mx-2">
-            {best.map(({ p, imp }, i) => (
-              <li key={p.id}>
-                <Link to={`/posts/${p.id}`} className="flex items-center gap-3 rounded-md px-2 py-2 text-sm hover:bg-muted">
-                  <span className="w-4 text-xs text-muted-foreground tabular-nums">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate">{p.caption?.split('\n')[0] || p.topic || `Post #${p.id}`}</span>
-                  <span className="text-xs text-muted-foreground tabular-nums">{fmtNumber(imp)}</span>
-                </Link>
-              </li>
-            ))}
-          </ol>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] table-fixed text-sm">
+              <thead>
+                <tr className="border-b text-left text-[11px] tracking-wide text-muted-foreground uppercase">
+                  <th className="w-[46%] py-2 pr-3 font-medium">Post</th>
+                  <th className="w-[20%] px-2 py-2 font-medium">Type</th>
+                  <th className="w-[11%] px-2 py-2 font-medium">Posted</th>
+                  <th className="w-[13%] px-2 py-2 text-right font-medium">Impressions</th>
+                  <th className="w-[10%] py-2 pl-2 text-right font-medium">Clicks</th>
+                </tr>
+              </thead>
+              <tbody>
+                {best.map(({ p, s: snap }) => (
+                  <tr key={p.id} className="border-b last:border-0">
+                    <td className="py-3 pr-3">
+                      <Link to={`/posts/${p.id}`} className="block truncate font-medium hover:underline">
+                        {p.caption?.split('\n')[0] || p.topic || `Post #${p.id}`}
+                      </Link>
+                    </td>
+                    <td className="truncate px-2 py-3 text-xs text-muted-foreground">{FORMAT_LABELS[p.format]}</td>
+                    <td className="px-2 py-3 text-xs whitespace-nowrap text-muted-foreground">{format(parseISO(p.published_at_uae.slice(0, 10)), 'd MMM')}</td>
+                    <td className="px-2 py-3 text-right font-semibold tabular-nums">{fmtNumber(snap!.impressions)}</td>
+                    <td className="py-3 pl-2 text-right tabular-nums">{fmtNumber(snap!.clicks)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-        <p className="mt-2 text-xs text-muted-foreground">Impressions so far; newer posts have had less time to collect them.</p>
       </CardContent>
     </Card>
   )

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Info, LogOut } from 'lucide-react'
+import { Info, LogOut, SlidersHorizontal, UserRound } from 'lucide-react'
 import { ROLE_HELP, ROLE_LABELS, useAuth } from '@/context/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,7 +36,7 @@ function SignedInProfile() {
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <PageHeader eyebrow="Your account" title="Profile" description="Your details come from your AVAIBE Microsoft account." />
-      <Section title="Details">
+      <Section icon={UserRound} title="Details">
         <dl className="grid gap-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-xs text-muted-foreground">Name</dt>
@@ -59,7 +59,7 @@ function SignedInProfile() {
         </dl>
         <p className="mt-4 text-xs text-muted-foreground">To change your role or access, ask an admin.</p>
       </Section>
-      <Section title="Preferences">
+      <Section icon={SlidersHorizontal} title="Preferences">
         <SimpleSelect
           label="Show times in"
           value={tz.zone}
@@ -100,7 +100,7 @@ function LocalProfile() {
         </span>
       </div>
 
-      <Section title="Details">
+      <Section icon={UserRound} title="Details">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label className="mb-1.5 block">Display name</Label>
@@ -113,7 +113,7 @@ function LocalProfile() {
         </div>
       </Section>
 
-      <Section title="Preferences">
+      <Section icon={SlidersHorizontal} title="Preferences">
         <SimpleSelect
           label="Show times in"
           value={tz.zone}

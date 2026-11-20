@@ -1,28 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   CalendarDays,
-  Inbox,
-  Kanban,
-  Swords,
+  Check,
   ChevronRight,
   ChevronsUpDown,
-  Check,
+  CircleHelp,
   Database,
+  Inbox,
+  Kanban,
   LayoutDashboard,
   Lightbulb,
-  Link2,
-  LogOut,
-  Monitor,
-  Moon,
   Send,
-  SquarePen,
   Settings,
-  Sun,
-  UserRound,
-  Clock,
+  SquarePen,
+  Swords,
 } from 'lucide-react'
-import { ROLE_LABELS, useAuth } from '@/context/auth'
+import { useAuth } from '@/context/auth'
 import type { Role } from '@/lib/api'
 import {
   Sidebar,
@@ -46,23 +40,14 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAccount } from '@/context/account'
-import { ACCENTS, useTheme, type Accent, type Theme } from '@/context/theme'
-import { useTz, ZONES, type ZoneId } from '@/context/timezone'
 import { usePlanned } from '@/hooks/queries'
 import { SUGGESTION_AREAS, useSuggestionItems } from '@/hooks/suggestion-items'
 import { needsAction } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
-import { readProfileName } from '@/pages/profile'
-import { UserAvatar } from '@/components/user-avatar'
+import { HelpDialog } from '@/components/help-dialog'
 
 // Set VITE_COPY_LABEL (e.g. "Test2") on an editable copy, so it can't be confused with the original
 const COPY_LABEL = import.meta.env.VITE_COPY_LABEL as string | undefined
@@ -113,6 +98,7 @@ export function AppSidebar() {
   const suggestionCount = SUGGESTION_AREAS.reduce((n, a) => n + counts[a.id], 0)
   const auth = useAuth()
   const navigate = useNavigate()
+  const [help, setHelp] = useState(false)
   const brand = useFoldingSection('/brand')
   const leads = useFoldingSection('/leads')
   const sales = useFoldingSection('/sales')
@@ -256,7 +242,24 @@ export function AppSidebar() {
             {COPY_LABEL} · editable copy
           </div>
         )}
-        <ProfileMenu />
+        {/* Pinned at the bottom: workspace settings (admins) and help. Your own profile is under your picture, top right. */}
+        <SidebarMenu>
+          {auth.can('admin') && (
+            <SidebarMenuItem>
+              <SidebarMenuButton isActive={pathname.startsWith('/settings')} tooltip="Settings" render={<NavLink to="/settings" />}>
+                <Settings />
+                <span>Settings</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Help" onClick={() => setHelp(true)}>
+              <CircleHelp />
+              <span>Help</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <HelpDialog open={help} onClose={() => setHelp(false)} />
       </SidebarFooter>
     </Sidebar>
   )
@@ -315,116 +318,3 @@ function WorkspaceSwitcher() {
   )
 }
 
-const THEMES: { value: Theme; label: string; icon: typeof Sun }[] = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
-]
-
-/** Bottom-left: who you are, with settings, appearance, time zone and sign-out in one menu. */
-function ProfileMenu() {
-  const auth = useAuth()
-  const navigate = useNavigate()
-  const { theme, setTheme, accent, setAccent } = useTheme()
-  const tz = useTz()
-  const [localName, setLocalName] = useState(readProfileName)
-  useEffect(() => {
-    const update = () => setLocalName(readProfileName())
-    window.addEventListener('profile-changed', update)
-    return () => window.removeEventListener('profile-changed', update)
-  }, [])
-
-  const signedIn = auth.user && !auth.user.dev
-  const name = signedIn ? (auth.user!.name ?? auth.user!.email) : localName || auth.demoEmail?.split('@')[0] || 'You'
-  const sub = signedIn ? `${ROLE_LABELS[auth.user!.role]} · ${auth.user!.email}` : 'Local mode · sign-in off'
-
-  return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<SidebarMenuButton size="lg" tooltip={name} />}>
-            <UserAvatar />
-            <span className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="truncate text-sm font-medium">{name}</span>
-              <span className="truncate text-xs text-muted-foreground">{signedIn ? ROLE_LABELS[auth.user!.role] : (auth.demoEmail ?? 'Local mode')}</span>
-            </span>
-            <ChevronsUpDown className="ml-auto size-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-64">
-            <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-foreground">
-                <div className="truncate text-sm font-medium">{name}</div>
-                <div className="truncate text-xs font-normal text-muted-foreground">{sub}</div>
-              </DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate('/profile')}>
-              <UserRound /> Profile
-            </DropdownMenuItem>
-            {auth.can('admin') && (
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings /> Settings
-              </DropdownMenuItem>
-            )}
-            {auth.can('approver') && (
-              <DropdownMenuItem onClick={() => navigate('/linkedin')}>
-                <Link2 /> LinkedIn connections
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                {theme === 'dark' ? <Moon /> : theme === 'system' ? <Monitor /> : <Sun />} Appearance
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-48">
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Mode</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as Theme)}>
-                    {THEMES.map((t) => (
-                      <DropdownMenuRadioItem key={t.value} value={t.value}>
-                        <t.icon /> {t.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuLabel>Accent colour</DropdownMenuLabel>
-                  <DropdownMenuRadioGroup value={accent} onValueChange={(v) => setAccent(v as Accent)}>
-                    {ACCENTS.map((a) => (
-                      <DropdownMenuRadioItem key={a.value} value={a.value} closeOnClick={false}>
-                        <span className="size-3.5 rounded-full" style={{ background: a.swatch }} aria-hidden /> {a.label}
-                      </DropdownMenuRadioItem>
-                    ))}
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Clock /> Time zone <span className="ml-auto pl-2 text-xs text-muted-foreground">{tz.label}</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuRadioGroup value={tz.zone} onValueChange={(v) => tz.setZone(v as ZoneId)}>
-                  {ZONES.map((z) => (
-                    <DropdownMenuRadioItem key={z.id} value={z.id}>
-                      {z.long}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            {(signedIn || auth.demoEmail) && (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => auth.signOut()}>
-                  <LogOut /> Sign out
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  )
-}

@@ -1,7 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CheckCircle2, CircleAlert, RotateCcw } from 'lucide-react'
+import { Building2, CheckCircle2, CircleAlert, Clock, Gauge, Plus, Receipt, RotateCcw, Sparkles, Target } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -114,7 +114,7 @@ function GeneralTab() {
 
   return (
     <div className="space-y-4">
-      <Section title="Time zone" description="How times are shown and entered for you. Posting-time analysis always stays in UAE time.">
+      <Section icon={Clock} title="Time zone" description="How times are shown and entered for you. Posting-time analysis always stays in UAE time.">
         <SimpleSelect
           label="Show times in"
           value={tz.zone}
@@ -123,7 +123,7 @@ function GeneralTab() {
         />
       </Section>
 
-      <Section title="Tracked accounts" description="Each LinkedIn asset has its own baseline. Company page and personal profiles are never mixed.">
+      <Section icon={Building2} title="Tracked accounts" description="Each LinkedIn asset has its own baseline. Company page and personal profiles are never mixed.">
         <Table>
           <TableHeader>
             <TableRow>
@@ -154,7 +154,7 @@ function GeneralTab() {
         </Table>
       </Section>
 
-      <Section title="Add account" description="For example AVAIBE's real company page, or Abhilash's and Anoop's profiles.">
+      <Section icon={Plus} title="Add account" description="For example AVAIBE's real company page, or Abhilash's and Anoop's profiles.">
         <form onSubmit={submit} className="grid gap-3 md:grid-cols-2">
           <div>
             <Label className="mb-1.5 block">Name *</Label>
@@ -198,6 +198,8 @@ const SEGMENT_FIELDS: { key: keyof SegmentSettings; label: string; hint: string 
   { key: 'education_industry', label: 'Education: industry keywords', hint: 'An industry containing any of these words counts as education.' },
   { key: 'decision_seniority', label: 'Decision-makers: seniority levels', hint: 'LinkedIn seniority values that count as decision-makers.' },
   { key: 'decision_titles', label: 'Decision-makers: job title keywords', hint: 'Used only when a post has no seniority breakdown.' },
+  { key: 'tech_functions', label: 'Technology professionals: job functions', hint: 'LinkedIn job functions that count as technology professionals (CTOs, IT managers, engineers).' },
+  { key: 'partner_functions', label: 'Potential partners: job functions', hint: 'LinkedIn job functions that count as potential partners (consultants, business development).' },
 ]
 
 const toText = (list: string[]) => list.join('\n')
@@ -225,7 +227,7 @@ function AudienceTab({ current }: { current: SegmentSettings }) {
     )
 
   return (
-    <Section
+    <Section icon={Target}
       title="Who counts as your target audience"
       description="These keywords decide the UAE, education and decision-maker shares everywhere in the app. Matching ignores case, and a keyword matches anywhere inside LinkedIn’s value (e.g. “dubai” matches “Dubai, United Arab Emirates”). One per line."
       actions={
@@ -291,7 +293,7 @@ function PerformanceTab({ current, defaults }: { current: PerformanceSettings; d
     )
 
   return (
-    <Section
+    <Section icon={Gauge}
       title="How performance is judged"
       description="Labels compare each post with the account’s own history at the same checkpoint. Raising the minimums gives more reliable results but needs more posts first."
       actions={
@@ -373,7 +375,7 @@ function ClaudeTab() {
     ) : (
       <Skeleton className="h-48" />
     )}
-    <Section title="Claude (AI) connection" description="Claude powers Strategy ideas on the Suggestions page. The API key is stored only on the server and is never shown here.">
+    <Section icon={Sparkles} title="Claude (AI) connection" description="Claude powers Strategy ideas on the Suggestions page. The API key is stored only on the server and is never shown here.">
       <dl className="grid gap-4 text-sm sm:grid-cols-3">
         <div>
           <dt className="text-xs text-muted-foreground">Status</dt>
@@ -406,7 +408,7 @@ function ClaudeTab() {
       )}
     </Section>
 
-    <Section
+    <Section icon={Receipt}
       title="Usage this month"
       description={`Since ${u.month_start_uae} (UAE). Cost is an estimate from token counts and list prices; the Anthropic Console shows the real bill.`}
     >

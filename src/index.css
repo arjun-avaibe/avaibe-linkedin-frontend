@@ -288,6 +288,21 @@
 [data-slot="sidebar-menu-button"][data-active] svg {
   color: var(--sidebar-accent-foreground);
 }
+/* A short accent bar at the left edge of the active item (hidden when the sidebar is folded to icons) */
+[data-slot="sidebar-menu-button"][data-active]::before,
+[data-slot="sidebar-menu-sub-button"][data-active]::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--primary);
+}
+[data-collapsible="icon"] [data-slot="sidebar-menu-button"][data-active]::before {
+  display: none;
+}
 
 /* Decorative helpers from the previous design */
 .app-backdrop { display: none; }

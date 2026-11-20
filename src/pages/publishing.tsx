@@ -88,7 +88,7 @@ export function PublishingPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader eyebrow="Publishing"
+      <PageHeader eyebrow="Content"
         title="Publishing"
         description="Draft → approve → publish. Text and image posts can be published by the app; carousel, video, article and poll posts are approved here, posted on LinkedIn by hand, then marked as posted."
         actions={
@@ -286,7 +286,7 @@ function PlannedCard({
       : STATUS[p.status]
 
   return (
-    <div className="rounded-xl p-4 ring-1 ring-foreground/10">
+    <div className="rounded-2xl bg-card p-5 shadow-sm ring-1 ring-border">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           {showFormat && <Badge variant="outline">{PLANNED_FORMAT_LABELS[p.format]}</Badge>}

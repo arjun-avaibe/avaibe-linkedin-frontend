@@ -63,6 +63,8 @@ export interface SegmentSettings {
   education_industry: string[]
   decision_seniority: string[]
   decision_titles: string[]
+  tech_functions: string[]
+  partner_functions: string[]
 }
 
 export interface PerformanceSettings {
@@ -398,6 +400,9 @@ export interface Shares {
   uae_share: number | null
   education_share: number | null
   decision_maker_share: number | null
+  /** Job functions in Settings → Audience definitions (may be missing on older data) */
+  tech_share?: number | null
+  partner_share?: number | null
 }
 
 export interface AudienceRow {

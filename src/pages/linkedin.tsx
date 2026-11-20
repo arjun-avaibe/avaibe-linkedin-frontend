@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CheckCircle2, Clock3, Link2, Unlink } from 'lucide-react'
+import { CheckCircle2, Clock3, Link2, ShieldCheck, Unlink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -62,7 +62,7 @@ export function LinkedInPage() {
         </div>
       )}
 
-      <Section
+      <Section icon={Link2}
         title="Connections"
         description="Connect a LinkedIn member to a personal or founder account to publish from the app. Connections last about 60 days, then need reconnecting."
       >
@@ -93,7 +93,7 @@ export function LinkedInPage() {
         </p>
       </Section>
 
-      <Section title="LinkedIn app permissions" description="Products enabled on the LinkedIn developer app.">
+      <Section icon={ShieldCheck} title="LinkedIn app permissions" description="Products enabled on the LinkedIn developer app.">
         <Table>
           <TableHeader>
             <TableRow>

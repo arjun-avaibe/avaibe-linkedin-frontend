@@ -177,7 +177,7 @@ export function CalendarPage() {
 
       <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="overflow-x-auto">
-          <div className="min-w-[700px] overflow-hidden rounded-xl border bg-card">
+          <div className="min-w-[700px] overflow-hidden rounded-2xl border bg-card shadow-sm">
             <div className="grid grid-cols-7 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
               {WEEKDAYS.map((w, i) => (
                 <div key={w} className={cn('px-2 py-2', i >= 5 && 'text-muted-foreground/70')}>
@@ -231,7 +231,7 @@ export function CalendarPage() {
               onClose={() => setSelected(null)}
             />
           ) : (
-            <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-dashed p-5 text-sm text-muted-foreground">
               <CalendarClock className="mb-2 size-5" />
               Click a day to see its holidays and events, how that weekday usually does, and to plan a post for it.
             </div>
@@ -449,7 +449,7 @@ function DayPanel({
   const newAt = new Date(`${day}T${start}:00+04:00`).toISOString()
 
   return (
-    <div className="rounded-xl border bg-card p-4 text-sm shadow-sm">
+    <div className="rounded-2xl border bg-card p-5 text-sm shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-xs text-muted-foreground">{format(parseISO(day), 'EEEE')}</div>

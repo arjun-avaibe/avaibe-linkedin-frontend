@@ -14,7 +14,7 @@ export function NewPostPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader eyebrow="Tracking" title="Add post" description={`Record a post published on ${account.name}. You'll add performance snapshots next.`} />
+      <PageHeader eyebrow="Data" title="Add post" description={`Record a post published on ${account.name}. You'll add performance snapshots next.`} />
       <Card>
         <CardContent>
           <PostForm

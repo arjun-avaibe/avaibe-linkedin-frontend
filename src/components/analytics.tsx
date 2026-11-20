@@ -8,13 +8,14 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Area, CartesianGrid, ComposedChart, ReferenceArea, XAxis, YAxis } from 'recharts'
 import { addDays, differenceInCalendarDays, endOfMonth, format, parseISO } from 'date-fns'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown } from 'lucide-react'
+import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Globe, LineChart, Sparkles } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
 import { api, type CalendarItem, type PageAudienceSnapshot, type PageDay, type Post } from '@/lib/api'
 import { FORMAT_LABELS, fmtNumber, fmtPct } from '@/lib/format'
 import { engagementOf, totals, ymd, type Totals } from '@/components/period'
 import { cn } from '@/lib/utils'
+import { CardHeading, IconTile } from '@/components/common'
 
 // ---------------------------------------------------------------- Highlights
 
@@ -50,8 +51,7 @@ export function Highlights({ items, dates, compareLabel, summary }: { items: Hig
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base font-semibold">Highlights</CardTitle>
-        <div className="text-xs text-muted-foreground">{dates}</div>
+        <CardHeading icon={Sparkles} title="Highlights" sub={dates} />
       </CardHeader>
       <CardContent>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
@@ -199,7 +199,7 @@ export function MetricsChart({
     <Card>
       <CardHeader className="gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <CardTitle className="text-base font-semibold">{title}</CardTitle>
+          <CardHeading icon={LineChart} title={title} />
           <div role="tablist" aria-label="Chart metric" className="flex flex-wrap gap-1 rounded-lg bg-secondary p-1">
             {metrics.map((m) => (
               <button
@@ -468,7 +468,7 @@ export function Demographics({ snapshot, noun }: { snapshot: PageAudienceSnapsho
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base font-semibold">{noun[0].toUpperCase() + noun.slice(1)} demographics</CardTitle>
+          <span className="flex items-center gap-3"><IconTile icon={Globe} /><CardTitle className="text-base font-semibold">{noun[0].toUpperCase() + noun.slice(1)} demographics</CardTitle></span>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
@@ -495,7 +495,7 @@ export function Demographics({ snapshot, noun }: { snapshot: PageAudienceSnapsho
       <CardHeader className="gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <CardTitle className="text-base font-semibold">{noun[0].toUpperCase() + noun.slice(1)} demographics</CardTitle>
+            <span className="flex items-center gap-3"><IconTile icon={Globe} /><CardTitle className="text-base font-semibold">{noun[0].toUpperCase() + noun.slice(1)} demographics</CardTitle></span>
             <div className="text-xs text-muted-foreground">
               As of {format(parseISO(snapshot.as_of), 'd MMM yyyy')}
               {total != null && ` · ${fmtNumber(total)} ${noun}`}
@@ -584,7 +584,7 @@ export function MonthlyTable({ days }: { days: PageDay[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm font-medium">Month by month</CardTitle>
+        <CardHeading icon={CalendarDays} title="Month by month" />
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
@@ -624,7 +624,7 @@ export function MonthlyTable({ days }: { days: PageDay[] }) {
 export function More({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="rounded-xl border bg-card">
+    <div className="rounded-2xl border bg-card shadow-sm">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3 text-left">
         <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')} />
         <span className="text-sm font-medium">{title}</span>

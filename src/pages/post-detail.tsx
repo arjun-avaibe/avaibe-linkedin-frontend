@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ExternalLink, Pencil, Trash2 } from 'lucide-react'
+import { ExternalLink, FileText, LineChart, Pencil, Trash2, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -53,7 +53,7 @@ function PostDetail({ post }: { post: Post }) {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <PageHeader eyebrow="Post performance"
+      <PageHeader eyebrow="Data"
         title={post.topic ?? `Post #${post.id}`}
         description={
           <>
@@ -92,7 +92,7 @@ function PostDetail({ post }: { post: Post }) {
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Section
+        <Section icon={LineChart}
           className="lg:col-span-2"
           title="Performance snapshots"
           description="Record numbers from LinkedIn post analytics at each checkpoint. Leave a field blank if LinkedIn doesn't show it; blank is not zero."
@@ -168,7 +168,7 @@ function PostDetail({ post }: { post: Post }) {
           </div>
         </Section>
 
-        <Section title="Post details">
+        <Section icon={FileText} title="Post details">
           <dl className="space-y-3 text-sm">
             <Detail label="CTA">{post.cta}</Detail>
             <Detail label="Industry">{post.industry}</Detail>
@@ -273,7 +273,7 @@ function AudienceSection({ post }: { post: Post }) {
   }
 
   return (
-    <Section
+    <Section icon={Users}
       className="mt-4"
       title="Who saw this post"
       description={

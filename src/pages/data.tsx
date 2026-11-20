@@ -2,12 +2,12 @@ import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { addDays, format, parseISO } from 'date-fns'
-import { FileUp } from 'lucide-react'
+import { FileUp, Filter } from 'lucide-react'
 import { buttonVariants } from '@/components/ui/button'
 import { useAuth } from '@/context/auth'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState, PageHeader } from '@/components/common'
+import { CardHeading, EmptyState, PageHeader } from '@/components/common'
 import { Demographics, Highlights, MetricsChart, More, type ChartMetric } from '@/components/analytics'
 import { engagementOf, useSortedDaily, usePeriod, ymd } from '@/components/period'
 import { useAccount } from '@/context/account'
@@ -108,6 +108,7 @@ export function DataPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader
+        eyebrow="Overview"
         title="Data"
         description="How your posts, page visitors and followers are doing."
         actions={
@@ -282,8 +283,7 @@ function VisitorsTab({ accountId, daily, win, stats, dates, compareLabel, posts 
         </div>
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">From visit to lead</CardTitle>
-            <div className="text-xs text-muted-foreground">Same period. LinkedIn stops at the visit; your Leads log carries it on.</div>
+            <CardHeading icon={Filter} title="From visit to lead" sub="Same period. LinkedIn stops at the visit; your Leads log carries it on." />
           </CardHeader>
           <CardContent>
             <Funnel

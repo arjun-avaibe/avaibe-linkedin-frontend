@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { Trash2 } from 'lucide-react'
+import { ClipboardList, Trash2, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
 import { Input } from '@/components/ui/input'
@@ -70,7 +70,7 @@ export function AudiencePage({ embedded = false, fixed }: { embedded?: boolean; 
         />
       )}
 
-      <Section
+      <Section icon={TrendingUp}
         title={`Target share of ${view} over time`}
         description="Share of the audience in each target segment. These are minimums, because LinkedIn lists only top values."
       >
@@ -184,7 +184,7 @@ function RecordSnapshot({ accountId, defaultType }: { accountId: number; default
   }
 
   return (
-    <Section
+    <Section icon={ClipboardList}
       title="Record a snapshot"
       description="From the page admin view go to Analytics → Followers (or Visitors) and copy the location, industry and seniority breakdowns. Counts are better than percentages when LinkedIn shows them. Saving the same date again replaces it."
     >

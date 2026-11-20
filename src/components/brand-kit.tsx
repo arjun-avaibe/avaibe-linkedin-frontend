@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { RotateCcw } from 'lucide-react'
+import { Palette, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -49,7 +49,7 @@ export function BrandKitForm({ current }: { current: BrandSettings }) {
     save.mutate({ section: 'brand', reset: true }, { onSuccess: () => toast.success('Restored the starting brand notes'), onError: (e) => toast.error(e.message) })
 
   return (
-    <Section
+    <Section icon={Palette}
       title="What Claude should know about the brand"
       description="Only what LinkedIn doesn’t hold: services, voice, strengths and what to avoid. Set once; Claude reads it with every idea run. Don’t put passwords, personal data or confidential deal details here."
       actions={
