@@ -30,7 +30,6 @@ import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
 import { isoToZonedInput, UAE, useTz, zonedInputToIso, zoneLabel } from '@/context/timezone'
 import { useLinkedInConnections, usePlanned, usePlannerMutation } from '@/hooks/queries'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   api,
   ApiError,
@@ -54,6 +53,16 @@ const STATUS: Record<PlannedStatus, { label: string; cls: string }> = {
   missed: { label: 'Missed', cls: 'bg-serious/15 text-serious-fg border-serious/40' },
 }
 
+/** Status filter: "Needs action" matches the red dot (drafts to approve, hand posts to mark, failures) */
+const STATUS_FILTERS: { value: string; label: string; test: (p: PlannedPost) => boolean }[] = [
+  { value: 'all', label: 'All statuses', test: () => true },
+  { value: 'action', label: 'Needs action', test: needsAction },
+  { value: 'draft', label: 'Draft', test: (p) => p.status === 'draft' },
+  { value: 'approved', label: 'Approved / scheduled', test: (p) => p.status === 'approved' || p.status === 'publishing' },
+  { value: 'published', label: 'Published', test: (p) => p.status === 'published' },
+  { value: 'problem', label: 'Failed or missed', test: (p) => p.status === 'failed' || p.status === 'missed' },
+]
+
 const MAX_CHARS = 3000
 
 export function PublishingPage() {
@@ -65,9 +74,16 @@ export function PublishingPage() {
   const connection = connections.find((c) => c.account_id === account?.id)
   const isCompany = account?.kind === 'company'
   const [params, setParams] = useSearchParams()
-  const tabParam = params.get('tab')
-  const tab: PlannedFormat | 'all' = (PLANNED_FORMATS as readonly string[]).includes(tabParam ?? '') ? (tabParam as PlannedFormat) : 'all'
-  const shown = (planned ?? []).filter((p) => tab === 'all' || p.format === tab)
+  // Filters instead of tabs: format and status, kept in the address (?format=, ?status=; old ?tab= links still work)
+  const formatParam = params.get('format') ?? params.get('tab')
+  const tab: PlannedFormat | 'all' = (PLANNED_FORMATS as readonly string[]).includes(formatParam ?? '') ? (formatParam as PlannedFormat) : 'all'
+  const statusParam = params.get('status') ?? 'all'
+  const status = STATUS_FILTERS.some((f) => f.value === statusParam) ? statusParam : 'all'
+  const setFilter = (key: 'format' | 'status', v: string) =>
+    setParams((p) => { p.delete('tab'); if (v === 'all') p.delete(key); else p.set(key, v); return p }, { replace: true })
+  const all = planned ?? []
+  const shown = all.filter((p) => (tab === 'all' || p.format === tab) && STATUS_FILTERS.find((f) => f.value === status)!.test(p))
+  const waitingIn = (f: PlannedFormat | 'all') => all.filter((p) => (f === 'all' || p.format === f) && needsAction(p)).length
   // From the Calendar: ?new_at=<ISO time> opens a new draft for that day and time
   const [newAt, setNewAt] = useState<string | undefined>()
   const canEdit = auth.can('editor')
@@ -97,22 +113,46 @@ export function PublishingPage() {
         }
       />
 
-      <Tabs value={tab} onValueChange={(v) => setParams((p) => { if (v === 'all') p.delete('tab'); else p.set('tab', String(v)); return p }, { replace: true })}>
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="all">
-            All <span className="text-muted-foreground tabular-nums">({planned?.length ?? 0})</span>
-          </TabsTrigger>
-          {PLANNED_FORMATS.map((f) => {
-            const waiting = (planned ?? []).filter((p) => p.format === f && needsAction(p)).length
-            return (
-              <TabsTrigger key={f} value={f} className="relative" title={waiting ? `${waiting} waiting for someone` : undefined}>
-                {PLANNED_FORMAT_LABELS[f]}
-                {waiting > 0 && <span aria-label={`${waiting} need action`} className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-bad ring-2 ring-background" />}
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
-      </Tabs>
+      {/* One quiet row of filters (was a tab per format) */}
+      <div className="flex flex-wrap items-center gap-3">
+        <SimpleSelect
+          label="Format"
+          value={tab}
+          onChange={(v) => setFilter('format', v)}
+          options={[
+            { value: 'all', label: 'All formats' },
+            ...PLANNED_FORMATS.map((f) => ({ value: f, label: `${PLANNED_FORMAT_LABELS[f]}${waitingIn(f) ? ` · ${waitingIn(f)} waiting` : ''}` })),
+          ]}
+        />
+        <SimpleSelect
+          label="Status"
+          value={status}
+          onChange={(v) => setFilter('status', v)}
+          options={STATUS_FILTERS.map((f) => ({ value: f.value, label: f.label }))}
+        />
+        {waitingIn(tab) > 0 && status !== 'action' && (
+          <button
+            type="button"
+            onClick={() => setFilter('status', 'action')}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <span className="size-2 rounded-full bg-bad" aria-hidden />
+            {waitingIn(tab)} need{waitingIn(tab) === 1 ? 's' : ''} action
+          </button>
+        )}
+        {(tab !== 'all' || status !== 'all') && (
+          <button
+            type="button"
+            onClick={() => setParams((p) => { p.delete('tab'); p.delete('format'); p.delete('status'); return p }, { replace: true })}
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            Clear
+          </button>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+          {shown.length} of {all.length} post{all.length === 1 ? '' : 's'}
+        </span>
+      </div>
 
       {isCompany ? (
         <div className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-3 text-sm">
@@ -139,8 +179,9 @@ export function PublishingPage() {
         <Skeleton className="h-48" />
       ) : !shown.length ? (
         <EmptyState>
-          {tab === 'all' ? 'No posts in the queue.' : `No ${PLANNED_FORMAT_LABELS[tab].toLowerCase()} posts in the queue.`} Click “New post” to draft
-          one.
+          {all.length && (tab !== 'all' || status !== 'all')
+            ? 'No posts match these filters.'
+            : 'No posts in the queue. Click “New post” to draft one.'}
         </EmptyState>
       ) : (
         <div className="space-y-3">
