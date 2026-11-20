@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AppSidebar } from '@/components/app-sidebar'
+import { TopBar } from '@/components/top-bar'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccount } from '@/context/account'
@@ -47,10 +48,12 @@ export function Layout() {
             Demo data: the numbers on these screens are sample figures for illustration, not AVAIBE’s real results.
           </div>
         )}
-        {/* The header is kept clear on purpose: only the sidebar toggle. Account, appearance, time zone
-            and profile live in the sidebar (top: account switcher, bottom-left: profile menu). */}
-        <header className="flex h-12 shrink-0 items-center px-4">
+        {/* Header: sidebar toggle on the left; notifications and profile picture on the right.
+            Account switching, appearance, time zone and settings stay in the sidebar. */}
+        <header className="flex h-14 shrink-0 items-center px-4 md:px-8">
           <SidebarTrigger className="-ml-1 text-muted-foreground" />
+          {/* Notifications and your profile picture, like most product dashboards */}
+          <TopBar />
         </header>
         <div key={pathname} className="page-enter flex-1 px-4 pb-10 md:px-8">
           {error ? (

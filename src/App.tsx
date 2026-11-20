@@ -10,6 +10,7 @@ import { LinkedInPage } from '@/pages/linkedin'
 import { NewPostPage } from '@/pages/post-new'
 import { PostDetailPage } from '@/pages/post-detail'
 import { ProfilePage } from '@/pages/profile'
+import { CreatePostPage } from '@/pages/create-post'
 import { PublishingPage } from '@/pages/publishing'
 import { SettingsPage } from '@/pages/settings'
 import { SignInPage } from '@/pages/signin'
@@ -28,6 +29,8 @@ export default function App() {
           <Route path="posts/:id" element={<PostDetailPage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="calendar" element={<CalendarPage />} />
+          <Route path="create" element={<CreatePostPage />} />
+          <Route path="create/:id" element={<CreatePostPage />} />
           <Route path="publishing" element={<PublishingPage />} />
           <Route path="audience" element={<Navigate to="/data?tab=audience" replace />} />
           <Route path="brand" element={<Navigate to="/brand/suggestions" replace />} />

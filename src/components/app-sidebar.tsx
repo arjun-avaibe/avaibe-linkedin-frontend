@@ -16,6 +16,7 @@ import {
   Monitor,
   Moon,
   Send,
+  SquarePen,
   Settings,
   Sun,
   UserRound,
@@ -56,11 +57,12 @@ import {
 import { useAccount } from '@/context/account'
 import { ACCENTS, useTheme, type Accent, type Theme } from '@/context/theme'
 import { useTz, ZONES, type ZoneId } from '@/context/timezone'
-import { useDueSnapshots, usePlanned } from '@/hooks/queries'
+import { usePlanned } from '@/hooks/queries'
 import { SUGGESTION_AREAS, useSuggestionItems } from '@/hooks/suggestion-items'
 import { needsAction } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
-import { initials, readProfileName } from '@/pages/profile'
+import { readProfileName } from '@/pages/profile'
+import { UserAvatar } from '@/components/user-avatar'
 
 // Set VITE_COPY_LABEL (e.g. "Test2") on an editable copy, so it can't be confused with the original
 const COPY_LABEL = import.meta.env.VITE_COPY_LABEL as string | undefined
@@ -72,6 +74,7 @@ const OVERVIEW: NavItem[] = [
   { to: '/data', label: 'Data', icon: Database, role: 'viewer' },
 ]
 const CONTENT: NavItem[] = [
+  { to: '/create', label: 'Create post', icon: SquarePen, role: 'editor' },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays, role: 'viewer' },
   { to: '/publishing', label: 'Publishing', icon: Send, role: 'viewer' },
 ]
@@ -103,7 +106,6 @@ const KIND_LABEL: Record<string, string> = { company: 'Company page', founder: '
 export function AppSidebar() {
   const { pathname } = useLocation()
   const { account } = useAccount()
-  const { data: due = [] } = useDueSnapshots(account?.id)
   const { counts } = useSuggestionItems(account?.id)
   const { data: planned = [] } = usePlanned(account?.id)
   const publishingWaiting = planned.filter(needsAction).length
@@ -137,11 +139,14 @@ export function AppSidebar() {
       .filter((item) => auth.can(item.role))
       .map((item) => (
         <SidebarMenuItem key={item.to}>
-          <SidebarMenuButton isActive={isActive(item.to)} tooltip={item.label} render={<NavLink to={item.to} end />}>
+          <SidebarMenuButton
+            isActive={isActive(item.to)}
+            tooltip={item.label}
+            render={<NavLink to={item.to} end />}
+          >
             <item.icon />
             <span>{item.label}</span>
           </SidebarMenuButton>
-          {item.to === '/data' && due.length > 0 && <SidebarMenuBadge title="Snapshots due">{due.length}</SidebarMenuBadge>}
           {item.to === '/publishing' && publishingWaiting > 0 && (
             <span
               aria-label={`${publishingWaiting} posts need action`}
@@ -338,9 +343,7 @@ function ProfileMenu() {
       <SidebarMenuItem>
         <DropdownMenu>
           <DropdownMenuTrigger render={<SidebarMenuButton size="lg" tooltip={name} />}>
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-              {initials(name) || <UserRound className="size-4" />}
-            </span>
+            <UserAvatar />
             <span className="grid min-w-0 flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate text-sm font-medium">{name}</span>
               <span className="truncate text-xs text-muted-foreground">{signedIn ? ROLE_LABELS[auth.user!.role] : (auth.demoEmail ?? 'Local mode')}</span>

@@ -8,7 +8,7 @@ import { inRange, TimeRangePicker, type TimeRange } from '@/components/time-rang
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
-import { useAllPosts, useOverview, usePosts } from '@/hooks/queries'
+import { useAllPosts, useOverview, usePosts, useDueSnapshots } from '@/hooks/queries'
 import { FORMATS, type Post, type Snapshot } from '@/lib/api'
 import { FORMAT_LABELS, fmtNumber, fmtPct } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -83,6 +83,10 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
   const [scope, setScope] = useState<'account' | 'all'>('account')
   const [format, setFormat] = useState('all')
   const [review, setReview] = useState(params.get('review') === 'needs')
+  // Posts whose 24h/48h/7d numbers are ready to record (the number shown on Data in the sidebar)
+  const [dueOnly, setDueOnly] = useState(params.get('due') === '1')
+  const { data: dueList = [] } = useDueSnapshots(scope === 'account' ? account?.id : undefined)
+  const dueIds = useMemo(() => new Set(dueList.map((d) => d.post_id)), [dueList])
   const [ownRange, setRange] = useState<TimeRange>({ preset: '90' })
   const range = outerRange ?? ownRange
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'date', desc: true })
@@ -102,7 +106,9 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
 
   const shown = useMemo(() => {
     const list = rows.filter(
-      (r) => inRange(r.post.published_at, range) && (!review || r.post.format === 'untagged' || r.post.topic_suggested),
+      (r) =>
+        (dueOnly ? dueIds.has(r.post.id) : inRange(r.post.published_at, range)) &&
+        (!review || r.post.format === 'untagged' || r.post.topic_suggested),
     )
     const val = (r: Row) => (sort.key === 'date' ? new Date(r.post.published_at).getTime() : r[sort.key])
     return list.sort((a, b) => {
@@ -113,7 +119,7 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
       if (y == null) return -1
       return sort.desc ? y - x : x - y
     })
-  }, [rows, range, review, sort])
+  }, [rows, range, review, sort, dueOnly, dueIds])
 
   const size = Number(pageSize)
   const pages = Math.max(1, Math.ceil(shown.length / size))
@@ -177,6 +183,23 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
             )}
           >
             Needs checking ({needsChecking})
+          </button>
+        )}
+        {scope === 'account' && (dueIds.size > 0 || dueOnly) && (
+          <button
+            type="button"
+            title="Posts whose 24h, 48h or 7-day numbers are ready to record. Open a post to add them."
+            onClick={() => {
+              setDueOnly((v) => !v)
+              setPage(0)
+              if (params.get('due')) setParams((p) => { p.delete('due'); return p }, { replace: true })
+            }}
+            className={cn(
+              'rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors',
+              dueOnly ? 'bg-primary text-primary-foreground ring-transparent' : 'text-muted-foreground ring-border hover:text-foreground',
+            )}
+          >
+            Snapshots due ({dueIds.size})
           </button>
         )}
         {embedded && auth.can('editor') && (

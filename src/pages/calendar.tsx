@@ -529,7 +529,7 @@ function DayPanel({
       </div>
 
       {canPlan && (
-        <Link to={`/publishing?new_at=${encodeURIComponent(newAt)}`} className={cn(buttonVariants({ size: 'sm' }), 'mt-4 w-full')}>
+        <Link to={`/create?new_at=${encodeURIComponent(newAt)}`} className={cn(buttonVariants({ size: 'sm' }), 'mt-4 w-full')}>
           <Plus /> Plan a post for this day
         </Link>
       )}

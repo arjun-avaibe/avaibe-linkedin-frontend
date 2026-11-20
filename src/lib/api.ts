@@ -274,6 +274,10 @@ export type PlannedFormat = (typeof PLANNED_FORMATS)[number]
 /** Format-specific fields; only the ones for the post's format are stored */
 export interface PlannedDetails {
   document_title?: string
+  /** Carousel built in the app: its slides and look (the PDF is made in the browser and uploaded as the media file) */
+  slides?: { headline: string; body: string }[]
+  carousel_theme?: 'brand' | 'dark' | 'light'
+  carousel_accent?: string
   subtitles?: boolean
   title?: string
   link?: string
@@ -674,6 +678,47 @@ export interface ExportFileResult {
   demographic_status?: 'new' | 'changed' | 'unchanged'
 }
 
+/** Create post → Analyse: Claude's suggestions for one draft (only ever runs on click) */
+export interface PostAssistResult {
+  improved_text: string
+  what_changed: string[]
+  image_prompt: string | null
+  quick_fixes: { kind: 'hashtags' | 'shorter' | 'cta'; title: string; text: string }[]
+  competitor_insights: string[]
+  content_ideas: { title: string; angle: string; format: PlannedFormat }[]
+  cautions: string[]
+}
+
+export interface PostAssistRun {
+  id: number
+  status: string
+  model: string
+  cost_usd: number
+  input_tokens: number | null
+  output_tokens: number | null
+  result: PostAssistResult
+  created_at: string
+}
+
+/** Create post → Chat with AI: one turn of the conversation */
+export interface ChatTurn {
+  message: string
+  questions: { question: string; options: string[] }[]
+  draft_text: string | null
+  /** When web search was on for that message: the pages it drew on */
+  sources?: { title: string; url: string }[]
+  searches?: number
+}
+
+/** Create post → Generate with AI (image AI, provider plugged in on the server) */
+export type ImageShape = 'square' | 'portrait' | 'landscape'
+export interface GeneratedImages {
+  run_id: number
+  provider: string
+  cost_usd: number
+  images: { url: string }[]
+}
+
 /** When each LinkedIn export type was last imported for an account */
 export type LastImports = Partial<Record<'content' | 'followers' | 'visitors', { at: string | null; exported_on: string; file: string | null }>>
 
@@ -828,6 +873,17 @@ export interface TimingModel {
   upcoming?: DateAdvice[]
 }
 
+/** A JSON body as multipart form fields plus one file (lists and objects are sent as JSON text) */
+function toForm(body: Record<string, unknown>, file: File): FormData {
+  const form = new FormData()
+  for (const [k, v] of Object.entries(body)) {
+    if (v == null) continue
+    form.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
+  }
+  form.append('attachment', file)
+  return form
+}
+
 async function request<T>(method: string, path: string, opts: { params?: Params; body?: unknown; form?: FormData } = {}): Promise<T> {
   const init: RequestInit = { method }
   if (opts.form) {
@@ -976,6 +1032,32 @@ export const api = {
     if (confirmProfile) form.append('confirm_profile', '1')
     return request<ExportImportResult>('POST', '/import/linkedin-export', { params: { account_id: accountId }, form })
   },
+  postAssistStatus: (accountId: number) =>
+    request<{ configured: boolean; runs_today: number; daily_limit: number }>('GET', '/ai/post-assist', { params: { account_id: accountId } }),
+  postAssist: (
+    body: { account_id: number; format: string; caption: string; topic: string | null; industry: string | null; cta: string | null; instructions: string | null },
+    attachment?: File | null,
+  ) => request<PostAssistRun>('POST', '/ai/post-assist', attachment ? { form: toForm(body, attachment) } : { body }),
+  postChatStatus: (accountId: number) =>
+    request<{ configured: boolean; messages_today: number; daily_limit: number; session_limit: number }>('GET', '/ai/post-chat', { params: { account_id: accountId } }),
+  postChat: (body: {
+    account_id: number
+    format: string
+    caption: string
+    topic: string | null
+    industry: string | null
+    cta: string | null
+    messages: { role: 'user' | 'assistant'; content: string }[]
+    web_search?: boolean
+  }, attachment?: File | null) =>
+    request<Omit<PostAssistRun, 'result'> & { result: ChatTurn }>('POST', '/ai/post-chat', attachment ? { form: toForm(body, attachment) } : { body }),
+  writeCarousel: (body: { account_id: number; caption: string; topic: string | null; industry: string | null; cta: string | null; instructions: string | null; slide_count: number }) =>
+    request<Omit<PostAssistRun, 'result'> & { result: { document_title: string; visual_style: string; slides: { headline: string; body: string }[] } }>('POST', '/ai/carousel', { body }),
+  imageStatus: (accountId: number) =>
+    request<{ configured: boolean; provider: string | null; price_per_image: number | null; images_today: number; daily_limit: number }>('GET', '/images/status', { params: { account_id: accountId } }),
+  generateImages: (body: { account_id: number; prompt: string; shape: ImageShape; count: number }) => request<GeneratedImages>('POST', '/images/generate', { body }),
+  generateSlide: (body: { account_id: number; style: string; headline: string; body: string; index: number; total: number }) =>
+    request<GeneratedImages>('POST', '/images/slide', { body }),
   lastImports: (accountId: number) => request<LastImports>('GET', `/accounts/${accountId}/last-imports`),
   pageDaily: (accountId: number) => request<PageDay[]>('GET', `/accounts/${accountId}/page-daily`),
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   CalendarClock,
@@ -8,7 +8,6 @@ import {
   ExternalLink,
   FileText,
   Hourglass,
-  ImagePlus,
   Link2,
   ListChecks,
   Pencil,
@@ -16,34 +15,29 @@ import {
   Send,
   Trash2,
   Undo2,
-  Upload,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Textarea } from '@/components/ui/textarea'
 import { EmptyState, PageHeader, SimpleSelect } from '@/components/common'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
-import { isoToZonedInput, UAE, useTz, zonedInputToIso, zoneLabel } from '@/context/timezone'
+import { useTz } from '@/context/timezone'
 import { useLinkedInConnections, usePlanned, usePlannerMutation } from '@/hooks/queries'
 import {
   api,
   ApiError,
   PLANNED_FORMATS,
   type LinkedInConnection,
-  type PlannedDetails,
   type PlannedFormat,
   type PlannedPost,
-  type PlannedPostInput,
   type PlannedStatus,
 } from '@/lib/api'
 import { needsAction, PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
-import { PostingTimeHint } from '@/components/posting-time-hint'
+import { DURATION_LABELS } from '@/pages/create-post'
 
 const STATUS: Record<PlannedStatus, { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 'bg-muted text-foreground border-border' },
@@ -56,7 +50,7 @@ const STATUS: Record<PlannedStatus, { label: string; cls: string }> = {
 
 /** Status filter: "Needs action" matches the red dot (drafts to approve, hand posts to mark, failures) */
 const STATUS_FILTERS: { value: string; label: string; test: (p: PlannedPost) => boolean }[] = [
-  { value: 'all', label: 'All statuses', test: () => true },
+  { value: 'all', label: 'All', test: () => true },
   { value: 'action', label: 'Needs action', test: needsAction },
   { value: 'draft', label: 'Draft', test: (p) => p.status === 'draft' },
   { value: 'approved', label: 'Approved / scheduled', test: (p) => p.status === 'approved' || p.status === 'publishing' },
@@ -64,14 +58,12 @@ const STATUS_FILTERS: { value: string; label: string; test: (p: PlannedPost) => 
   { value: 'problem', label: 'Failed or missed', test: (p) => p.status === 'failed' || p.status === 'missed' },
 ]
 
-const MAX_CHARS = 3000
 
 export function PublishingPage() {
   const { account } = useAccount()
   const auth = useAuth()
   const { data: connections = [] } = useLinkedInConnections()
   const { data: planned, isLoading } = usePlanned(account?.id)
-  const [editing, setEditing] = useState<PlannedPost | 'new' | null>(null)
   const connection = connections.find((c) => c.account_id === account?.id)
   const isCompany = account?.kind === 'company'
   const [params, setParams] = useSearchParams()
@@ -85,18 +77,12 @@ export function PublishingPage() {
   const all = planned ?? []
   const shown = all.filter((p) => (tab === 'all' || p.format === tab) && STATUS_FILTERS.find((f) => f.value === status)!.test(p))
   const waitingIn = (f: PlannedFormat | 'all') => all.filter((p) => (f === 'all' || p.format === f) && needsAction(p)).length
-  // From the Calendar: ?new_at=<ISO time> opens a new draft for that day and time
-  const [newAt, setNewAt] = useState<string | undefined>()
-  const canEdit = auth.can('editor')
+  const navigate = useNavigate()
+  // Old links (?new_at=<ISO time> from the Calendar) now open the Create post page
   useEffect(() => {
     const at = params.get('new_at')
-    if (!at) return
-    if (canEdit && !Number.isNaN(Date.parse(at))) {
-      setNewAt(at)
-      setEditing('new')
-    }
-    setParams((p) => { p.delete('new_at'); return p }, { replace: true })
-  }, [params, setParams, canEdit])
+    if (at) navigate(`/create?new_at=${encodeURIComponent(at)}`, { replace: true })
+  }, [params, navigate])
 
   if (!account) return null
 
@@ -107,7 +93,7 @@ export function PublishingPage() {
         description="Draft → approve → publish. Text and image posts can be published by the app; carousel, video, article and poll posts are approved here, posted on LinkedIn by hand, then marked as posted."
         actions={
           auth.can('editor') ? (
-            <Button size="sm" onClick={() => setEditing('new')}>
+            <Button size="sm" onClick={() => navigate(tab === 'all' ? '/create' : `/create?format=${tab}`)}>
               <Plus /> New {tab === 'all' ? 'post' : `${PLANNED_FORMAT_LABELS[tab].toLowerCase()} post`}
             </Button>
           ) : undefined
@@ -121,8 +107,16 @@ export function PublishingPage() {
           value={tab}
           onChange={(v) => setFilter('format', v)}
           options={[
-            { value: 'all', label: 'All formats' },
-            ...PLANNED_FORMATS.map((f) => ({ value: f, label: `${PLANNED_FORMAT_LABELS[f]}${waitingIn(f) ? ` · ${waitingIn(f)} waiting` : ''}` })),
+            { value: 'all', label: 'All', count: all.length },
+            // A red dot (no text) marks formats with posts waiting for someone, as the old tabs did
+            ...PLANNED_FORMATS.map((f) => ({
+              value: f,
+              label: PLANNED_FORMAT_LABELS[f],
+              count: all.filter((p) => p.format === f).length,
+              countInList: false, // the open list stays clean: only "All" shows a number
+              dot: waitingIn(f) > 0,
+              dotLabel: `${waitingIn(f)} waiting for someone`,
+            })),
           ]}
         />
         <SimpleSelect
@@ -187,20 +181,11 @@ export function PublishingPage() {
       ) : (
         <div className="space-y-3">
           {shown.map((p) => (
-            <PlannedCard key={p.id} p={p} accountId={account.id} connection={connection} showFormat={tab === 'all'} onEdit={() => setEditing(p)} />
+            <PlannedCard key={p.id} p={p} accountId={account.id} connection={connection} showFormat={tab === 'all'} onEdit={() => navigate(`/create/${p.id}`)} />
           ))}
         </div>
       )}
 
-      {editing && (
-        <PlannedDialog
-          accountId={account.id}
-          initial={editing === 'new' ? undefined : editing}
-          defaultFormat={tab === 'all' ? 'text' : tab}
-          defaultScheduled={editing === 'new' ? newAt : undefined}
-          onClose={() => { setEditing(null); setNewAt(undefined) }}
-        />
-      )}
     </div>
   )
 }
@@ -452,7 +437,6 @@ async function copyText(text: string) {
   }
 }
 
-const DURATION_LABELS: Record<NonNullable<PlannedDetails['duration']>, string> = { '1d': '1 day', '3d': '3 days', '1w': '1 week', '2w': '2 weeks' }
 
 /** The format-specific parts of a queued post, shown under its text */
 function FormatSummary({ p }: { p: PlannedPost }) {
@@ -538,314 +522,5 @@ function MarkPostedDialog({ p, accountId, onClose }: { p: PlannedPost; accountId
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function PlannedDialog({
-  accountId,
-  initial,
-  defaultFormat,
-  defaultScheduled,
-  onClose,
-}: {
-  accountId: number
-  initial?: PlannedPost
-  defaultFormat: PlannedFormat
-  defaultScheduled?: string // ISO time, e.g. from the Calendar
-  onClose: () => void
-}) {
-  const tz = useTz()
-  // Lock the zone while the dialog is open so a zone switch can't reinterpret the typed time
-  const [zone] = useState(tz.zone)
-  const [format, setFormat] = useState<PlannedFormat>(initial?.format ?? defaultFormat)
-  const [details, setDetails] = useState<PlannedDetails>(initial?.details ?? {})
-  const setDetail = <K extends keyof PlannedDetails>(k: K, v: PlannedDetails[K]) => setDetails((d) => ({ ...d, [k]: v }))
-  const [media, setMedia] = useState<File | null>(null)
-  const manual = format !== 'text' && format !== 'image'
-  const [caption, setCaption] = useState(initial?.caption ?? '')
-  const startAt = initial?.scheduled_at ?? defaultScheduled
-  const [scheduled, setScheduled] = useState(startAt ? isoToZonedInput(startAt, zone) : '')
-  const [visibility, setVisibility] = useState<'PUBLIC' | 'CONNECTIONS'>(initial?.visibility ?? 'PUBLIC')
-  const [topic, setTopic] = useState(initial?.topic ?? '')
-  const [industry, setIndustry] = useState(initial?.industry ?? '')
-  const [cta, setCta] = useState(initial?.cta ?? '')
-  const [imageAlt, setImageAlt] = useState(initial?.image_alt ?? '')
-  const [file, setFile] = useState<File | null>(null)
-  const [removeImage, setRemoveImage] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const refresh = usePlannerMutation(accountId, async () => undefined)
-
-  const save = async () => {
-    if (!caption.trim()) return toast.error('Write the post text first')
-    if (caption.length > MAX_CHARS) return toast.error(`LinkedIn allows ${MAX_CHARS} characters`)
-    const options = (details.options ?? []).map((o) => o.trim()).filter(Boolean)
-    if (format === 'poll' && (!details.question?.trim() || options.length < 2)) return toast.error('A poll needs a question and at least 2 options')
-    const body: PlannedPostInput = {
-      account_id: accountId,
-      format,
-      details: format === 'poll' ? { ...details, options } : details,
-      caption,
-      image_alt: imageAlt.trim() || null,
-      visibility,
-      scheduled_at: scheduled ? zonedInputToIso(scheduled, zone) : null,
-      topic: topic.trim() || null,
-      industry: industry.trim() || null,
-      cta: cta.trim() || null,
-      keywords: [],
-    }
-    setSaving(true)
-    try {
-      const saved = initial ? await api.updatePlanned(initial.id, body) : await api.createPlanned(body)
-      // The server removes files that don't belong to a changed format
-      if (format === 'image' && removeImage && initial?.has_image) await api.removePlannedImage(saved.id)
-      if (format === 'image' && file) await api.uploadPlannedImage(saved.id, file)
-      if ((format === 'carousel' || format === 'video') && media) await api.uploadPlannedMedia(saved.id, media)
-      toast.success(initial ? 'Saved. Approve it again before it can be published.' : 'Draft saved')
-      refresh.mutate(undefined)
-      onClose()
-    } catch (e) {
-      toast.error((e as Error).message)
-      refresh.mutate(undefined)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const over = caption.length > MAX_CHARS
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{initial ? 'Edit post' : 'New post'}</DialogTitle>
-          <DialogDescription>
-            Saved as a draft. It needs approval{manual ? ', then someone posts it on LinkedIn by hand and marks it as posted.' : ' before it can be published.'}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label className="mb-1.5 block">Format</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {PLANNED_FORMATS.map((f) => (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setFormat(f)}
-                  className={cn(
-                    'rounded-full px-3 py-1 text-xs font-medium ring-1 transition-colors',
-                    format === f ? 'bg-brand-gradient text-white ring-transparent' : 'text-muted-foreground ring-primary/20 hover:text-foreground',
-                  )}
-                >
-                  {PLANNED_FORMAT_LABELS[f]}
-                </button>
-              ))}
-            </div>
-            {manual && <p className="mt-1 text-xs text-muted-foreground">The app can’t publish this format yet: it will be posted on LinkedIn by hand.</p>}
-          </div>
-
-          <div>
-            <Label className="mb-1.5 block">{format === 'article' ? 'Intro post text *' : 'Post text *'}</Label>
-            <Textarea rows={8} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder={'Hook line first: it is all most people see.\n\n…\n\n#UAE #EdTech'} />
-            <div className={cn('mt-1 flex justify-between text-xs', over ? 'text-bad-fg' : 'text-muted-foreground')}>
-              <span>Hashtags written as #tag become clickable.</span>
-              <span className="tabular-nums">
-                {caption.length.toLocaleString()} / {MAX_CHARS.toLocaleString()}
-              </span>
-            </div>
-            {caption.trim() && (
-              <div className="mt-2 rounded-md bg-muted/50 px-3 py-2 text-xs">
-                <span className="font-medium">Before “…see more”, roughly: </span>
-                <span className="text-muted-foreground">{hookPreview(caption)}</span>
-              </div>
-            )}
-          </div>
-
-          {format === 'carousel' && (
-            <div className="space-y-2">
-              <Label className="block">Carousel</Label>
-              <Input
-                value={details.document_title ?? ''}
-                onChange={(e) => setDetail('document_title', e.target.value)}
-                maxLength={100}
-                placeholder="Document title shown on LinkedIn, e.g. 5 signs your school has outgrown its LMS"
-              />
-              <MediaPicker
-                accept="application/pdf"
-                label="the PDF (up to 100 MB)"
-                file={media}
-                onFile={setMedia}
-                current={initial?.has_media ? initial : undefined}
-              />
-              <p className="text-xs text-muted-foreground">LinkedIn carousels are PDF documents: one slide per page. Make the first slide the hook.</p>
-            </div>
-          )}
-
-          {format === 'video' && (
-            <div className="space-y-2">
-              <Label className="block">Video</Label>
-              <MediaPicker accept="video/mp4,video/quicktime" label="the video (MP4 or MOV, up to 200 MB)" file={media} onFile={setMedia} current={initial?.has_media ? initial : undefined} />
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={!!details.subtitles} onChange={(e) => setDetail('subtitles', e.target.checked)} />
-                Subtitles added (many people watch with the sound off)
-              </label>
-            </div>
-          )}
-
-          {format === 'article' && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <Label className="mb-1.5 block">Article / newsletter title</Label>
-                <Input value={details.title ?? ''} onChange={(e) => setDetail('title', e.target.value)} maxLength={150} placeholder="e.g. Gulf business-tech brief: November" />
-              </div>
-              <div>
-                <Label className="mb-1.5 block">Link (if already published)</Label>
-                <Input value={details.link ?? ''} onChange={(e) => setDetail('link', e.target.value)} placeholder="https://…" />
-              </div>
-            </div>
-          )}
-
-          {format === 'poll' && (
-            <div className="space-y-2">
-              <Label className="block">Poll question *</Label>
-              <Input value={details.question ?? ''} onChange={(e) => setDetail('question', e.target.value)} maxLength={140} placeholder="e.g. What slows down your ERP project most?" />
-              <div className="grid gap-2 sm:grid-cols-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <Input
-                    key={i}
-                    value={details.options?.[i] ?? ''}
-                    maxLength={30}
-                    placeholder={`Option ${i + 1}${i < 2 ? ' *' : ' (optional)'}`}
-                    onChange={(e) => {
-                      const next = [...(details.options ?? [])]
-                      while (next.length <= i) next.push('')
-                      next[i] = e.target.value
-                      setDetail('options', next)
-                    }}
-                  />
-                ))}
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Runs for</span>
-                <SimpleSelect
-                  value={details.duration ?? '1w'}
-                  onChange={(v) => setDetail('duration', v as PlannedDetails['duration'])}
-                  options={Object.entries(DURATION_LABELS).map(([value, label]) => ({ value, label }))}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">LinkedIn polls: question up to 140 characters, 2 to 4 options of up to 30 characters.</p>
-            </div>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <Label className="mb-1.5 block">
-                {manual ? 'Planned date' : 'Publish at'} ({zoneLabel(zone)} time)
-              </Label>
-              <Input type="datetime-local" value={scheduled} onChange={(e) => setScheduled(e.target.value)} />
-              <p className="mt-1 text-xs text-muted-foreground">
-                {scheduled && zone !== UAE
-                  ? `= ${isoToZonedInput(zonedInputToIso(scheduled, zone), UAE).replace('T', ' ')} UAE`
-                  : manual
-                    ? 'For planning only: the app won’t post this format.'
-                    : 'Leave empty to publish manually.'}
-              </p>
-            </div>
-            <div className={cn(manual && 'hidden')}>
-              <Label className="mb-1.5 block">Who can see it</Label>
-              <SimpleSelect
-                value={visibility}
-                onChange={(v) => setVisibility(v as 'PUBLIC' | 'CONNECTIONS')}
-                options={[
-                  { value: 'PUBLIC', label: 'Anyone (public)' },
-                  { value: 'CONNECTIONS', label: 'Connections only' },
-                ]}
-                className="h-8 w-full"
-              />
-            </div>
-          </div>
-
-          {/* Best time to post for the chosen day, from this account's own past posts */}
-          <PostingTimeHint accountId={accountId} scheduled={scheduled} zone={zone} onPick={setScheduled} />
-
-          <div className={cn(format !== 'image' && 'hidden')}>
-            <Label className="mb-1.5 block">Image</Label>
-            {initial?.has_image && !removeImage && !file && (
-              <div className="mb-2 flex items-center gap-3">
-                <img src={api.plannedImageUrl(initial.id, initial.approved_at ?? 'x')} alt="" className="size-16 rounded object-cover" />
-                <Button size="xs" variant="outline" onClick={() => setRemoveImage(true)}>
-                  Remove image
-                </Button>
-              </div>
-            )}
-            <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
-              <ImagePlus className="size-4" />
-              {file ? file.name : initial?.has_image && !removeImage ? 'Replace image (JPG, PNG or GIF, max 10 MB)' : 'Add an image (JPG, PNG or GIF, max 10 MB)'}
-              <input type="file" accept="image/jpeg,image/png,image/gif" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            </label>
-            {(file || (initial?.has_image && !removeImage)) && (
-              <Input className="mt-2" value={imageAlt} onChange={(e) => setImageAlt(e.target.value)} placeholder="Alt text: describe the image for screen readers" />
-            )}
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <Label className="mb-1.5 block">Topic</Label>
-              <Input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. LMS" />
-            </div>
-            <div>
-              <Label className="mb-1.5 block">Industry</Label>
-              <Input value={industry} onChange={(e) => setIndustry(e.target.value)} placeholder="e.g. Education" />
-            </div>
-            <div>
-              <Label className="mb-1.5 block">CTA</Label>
-              <Input value={cta} onChange={(e) => setCta(e.target.value)} placeholder="e.g. Comment LMS" />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">Topic, industry and CTA are copied into tracking when the post is published.</p>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={save} disabled={saving || over}>
-            {saving ? 'Saving…' : 'Save draft'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-/** Roughly what LinkedIn shows before "…see more": the first 3 lines, cut at about 210 characters. Approximate: it varies by device. */
-function hookPreview(caption: string): string {
-  const lines = caption.trim().split('\n').slice(0, 3).join(' ').replace(/\s+/g, ' ')
-  return lines.length > 210 ? `${lines.slice(0, 210).trimEnd()}…` : lines
-}
-
-function MediaPicker({
-  accept,
-  label,
-  file,
-  onFile,
-  current,
-}: {
-  accept: string
-  label: string
-  file: File | null
-  onFile: (f: File | null) => void
-  current?: PlannedPost
-}) {
-  return (
-    <div>
-      {current && !file && (
-        <a href={api.plannedMediaUrl(current.id)} target="_blank" rel="noreferrer" className="mb-2 inline-flex items-center gap-1 text-xs underline">
-          Current file: {current.media_name ?? 'open'} <ExternalLink className="size-3" />
-        </a>
-      )}
-      <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-3 py-2 text-sm text-muted-foreground hover:bg-muted">
-        <Upload className="size-4" />
-        {file ? file.name : current ? `Replace ${label}` : `Attach ${label} for the approver to review`}
-        <input type="file" accept={accept} className="hidden" onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
-      </label>
-    </div>
   )
 }

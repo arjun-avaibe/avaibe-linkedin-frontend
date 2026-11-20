@@ -141,21 +141,38 @@ export function TrendBadge({ trend }: { trend: Trend }) {
 export function SimpleSelect({ value, onChange, options, label, className }: {
   value: string
   onChange: (v: string) => void
-  options: { value: string; label: string }[]
+  /** dot: a small red dot after the label, e.g. "something here needs action" (dotLabel is read out to screen readers) */
+  /** count: a quiet number after the label, e.g. how many posts "All" covers */
+  /** countInList: false shows the count only on the closed box, once that option is chosen */
+  options: { value: string; label: string; dot?: boolean; dotLabel?: string; count?: number; countInList?: boolean }[]
   label?: string
   className?: string
 }) {
+  const dot = (o: { dot?: boolean; dotLabel?: string }) =>
+    o.dot ? <span aria-label={o.dotLabel ?? 'Needs action'} title={o.dotLabel} className="size-2 shrink-0 self-center rounded-full bg-bad" /> : null
+  // A quiet number at the right edge: next to the arrow on the closed box, before the tick in the open list
+  const count = (o: { count?: number }, inList = false) =>
+    o.count != null ? <span className={cn('self-center text-xs text-muted-foreground tabular-nums', inList && 'ml-auto')}>{o.count}</span> : null
+  const selected = options.find((o) => o.value === value)
   return (
     <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
       {label}
       <Select value={value} onValueChange={(v) => v !== null && onChange(v)} items={options}>
         <SelectTrigger size="sm" className={cn('min-w-28 text-foreground', className)}>
-          <SelectValue />
+          <span className="flex flex-1 items-center gap-1.5">
+            <SelectValue className="flex-none" />
+            {/* The dot only flags options inside the open list; the closed box shows the count instead (when there is one) */}
+            {selected && selected.count == null && dot(selected)}
+          </span>
+          {/* The count sits by the arrow */}
+          {selected && count(selected)}
         </SelectTrigger>
         <SelectContent>
           {options.map((o) => (
             <SelectItem key={o.value} value={o.value}>
               {o.label}
+              {dot(o)}
+              {o.countInList !== false && count(o, true)}
             </SelectItem>
           ))}
         </SelectContent>
