@@ -9,7 +9,6 @@ import { LeadSuggestionsPage, LeadsLogPage, PipelinePage, SalesSuggestionsPage }
 import { LinkedInPage } from '@/pages/linkedin'
 import { NewPostPage } from '@/pages/post-new'
 import { PostDetailPage } from '@/pages/post-detail'
-import { PostsPage } from '@/pages/posts'
 import { ProfilePage } from '@/pages/profile'
 import { PublishingPage } from '@/pages/publishing'
 import { SettingsPage } from '@/pages/settings'
@@ -24,7 +23,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route index element={<DashboardPage />} />
           <Route path="data" element={<DataPage />} />
-          <Route path="posts" element={<PostsPage />} />
+          <Route path="posts" element={<Navigate to="/data?tab=posts" replace />} />
           <Route path="posts/new" element={<NewPostPage />} />
           <Route path="posts/:id" element={<PostDetailPage />} />
           <Route path="import" element={<ImportPage />} />

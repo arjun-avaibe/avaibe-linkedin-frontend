@@ -658,14 +658,24 @@ export interface ExportFileResult {
   errors: string[]
   skipped?: string
   days_saved?: number
+  days_new?: number
+  days_changed?: number
+  days_unchanged?: number
   posts_created?: number
+  /** Already stored and something changed (usually newer numbers) */
   posts_updated?: number
+  /** Already stored and identical: nothing was added */
+  posts_unchanged?: number
   snapshots_saved?: number
   snapshots_kept_manual?: number
   posts_too_new?: number
   demographic_rows?: number
   demographic_total?: number
+  demographic_status?: 'new' | 'changed' | 'unchanged'
 }
+
+/** When each LinkedIn export type was last imported for an account */
+export type LastImports = Partial<Record<'content' | 'followers' | 'visitors', { at: string | null; exported_on: string; file: string | null }>>
 
 export interface ExportImportResult {
   account: string
@@ -958,11 +968,14 @@ export const api = {
     form.append('file', file)
     return request<ImportResult>('POST', '/import/csv', { params: { account_id: accountId }, form })
   },
-  importLinkedInExport: (accountId: number, files: File[], exportedOn: string | null) => {
+  importLinkedInExport: (accountId: number, files: File[], exportedOn: string | null, confirmProfile = false) => {
     const form = new FormData()
     files.forEach((f) => form.append('files', f))
     if (exportedOn) form.append('exported_on', exportedOn)
+    // Company-page exports into a founder/personal profile need an explicit yes (the API refuses otherwise)
+    if (confirmProfile) form.append('confirm_profile', '1')
     return request<ExportImportResult>('POST', '/import/linkedin-export', { params: { account_id: accountId }, form })
   },
+  lastImports: (accountId: number) => request<LastImports>('GET', `/accounts/${accountId}/last-imports`),
   pageDaily: (accountId: number) => request<PageDay[]>('GET', `/accounts/${accountId}/page-daily`),
 }

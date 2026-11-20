@@ -74,7 +74,8 @@ function buildRows(posts: Post[]): Row[] {
   })
 }
 
-export function PostsPage() {
+/** embedded: shown as the Posts tab of the Data page, which supplies the time range and the page title */
+export function PostsPage({ embedded = false, range: outerRange }: { embedded?: boolean; range?: TimeRange } = {}) {
   const { account, accounts } = useAccount()
   const auth = useAuth()
   const tz = useTz()
@@ -82,7 +83,8 @@ export function PostsPage() {
   const [scope, setScope] = useState<'account' | 'all'>('account')
   const [format, setFormat] = useState('all')
   const [review, setReview] = useState(params.get('review') === 'needs')
-  const [range, setRange] = useState<TimeRange>({ preset: '90' })
+  const [ownRange, setRange] = useState<TimeRange>({ preset: '90' })
+  const range = outerRange ?? ownRange
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>({ key: 'date', desc: true })
   const [pageSize, setPageSize] = useState('10')
   const [page, setPage] = useState(0)
@@ -128,8 +130,8 @@ export function PostsPage() {
   const showAccount = scope === 'all'
 
   return (
-    <div className="mx-auto max-w-7xl">
-      <PageHeader
+    <div className={embedded ? '' : 'mx-auto max-w-7xl'}>
+      {!embedded && <PageHeader
         title="Posts"
         description="Every post with its numbers so far. “vs typical” compares each post with this account’s usual post at the same age."
         actions={
@@ -139,11 +141,11 @@ export function PostsPage() {
             </Link>
           )
         }
-      />
+      />}
 
       {/* Filters: a few, in one row */}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <TimeRangePicker value={range} onChange={resetPage(setRange)} />
+        {!embedded && <TimeRangePicker value={range} onChange={resetPage(setRange)} />}
         <SimpleSelect
           label="Type"
           value={format}
@@ -176,6 +178,11 @@ export function PostsPage() {
           >
             Needs checking ({needsChecking})
           </button>
+        )}
+        {embedded && auth.can('editor') && (
+          <Link to="/posts/new" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'ml-auto')}>
+            <Plus /> Add post
+          </Link>
         )}
       </div>
 

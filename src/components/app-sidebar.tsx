@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   Lightbulb,
   Link2,
-  ListChecks,
   LogOut,
   Monitor,
   Moon,
@@ -73,7 +72,6 @@ const OVERVIEW: NavItem[] = [
   { to: '/data', label: 'Data', icon: Database, role: 'viewer' },
 ]
 const CONTENT: NavItem[] = [
-  { to: '/posts', label: 'Posts', icon: ListChecks, role: 'viewer' },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays, role: 'viewer' },
   { to: '/publishing', label: 'Publishing', icon: Send, role: 'viewer' },
 ]
@@ -130,11 +128,9 @@ export function AppSidebar() {
   const isActive = (to: string) =>
     to === '/'
       ? pathname === '/'
-      : to === '/posts'
-        ? pathname === '/posts' || /^\/posts\/\d+/.test(pathname)
-        : to === '/data'
-          ? pathname.startsWith('/data') || pathname.startsWith('/import') // Import lives inside Data now
-          : pathname.startsWith(to)
+      : to === '/data'
+        ? pathname.startsWith('/data') || pathname.startsWith('/import') || pathname.startsWith('/posts') // Import and Posts live inside Data now
+        : pathname.startsWith(to)
 
   const renderItems = (items: NavItem[]) =>
     items
@@ -145,7 +141,7 @@ export function AppSidebar() {
             <item.icon />
             <span>{item.label}</span>
           </SidebarMenuButton>
-          {item.to === '/posts' && due.length > 0 && <SidebarMenuBadge title="Snapshots due">{due.length}</SidebarMenuBadge>}
+          {item.to === '/data' && due.length > 0 && <SidebarMenuBadge title="Snapshots due">{due.length}</SidebarMenuBadge>}
           {item.to === '/publishing' && publishingWaiting > 0 && (
             <span
               aria-label={`${publishingWaiting} posts need action`}

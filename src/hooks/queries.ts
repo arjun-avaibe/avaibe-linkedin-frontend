@@ -303,12 +303,13 @@ export function useImportLinkedInExport(accountId: number) {
   const invalidate = useInvalidateAccount()
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ files, exportedOn }: { files: File[]; exportedOn: string | null }) =>
-      api.importLinkedInExport(accountId, files, exportedOn),
+    mutationFn: ({ files, exportedOn, confirmProfile }: { files: File[]; exportedOn: string | null; confirmProfile?: boolean }) =>
+      api.importLinkedInExport(accountId, files, exportedOn, confirmProfile),
     onSuccess: () => {
       invalidate(accountId)
       qc.invalidateQueries({ queryKey: ['page-daily', accountId] })
       qc.invalidateQueries({ queryKey: ['page-audience', accountId] })
+      qc.invalidateQueries({ queryKey: ['last-imports', accountId] })
     },
   })
 }

@@ -43,6 +43,7 @@ import {
 } from '@/lib/api'
 import { needsAction, PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
+import { PostingTimeHint } from '@/components/posting-time-hint'
 
 const STATUS: Record<PlannedStatus, { label: string; cls: string }> = {
   draft: { label: 'Draft', cls: 'bg-muted text-foreground border-border' },
@@ -761,6 +762,9 @@ function PlannedDialog({
               />
             </div>
           </div>
+
+          {/* Best time to post for the chosen day, from this account's own past posts */}
+          <PostingTimeHint accountId={accountId} scheduled={scheduled} zone={zone} onPick={setScheduled} />
 
           <div className={cn(format !== 'image' && 'hidden')}>
             <Label className="mb-1.5 block">Image</Label>
