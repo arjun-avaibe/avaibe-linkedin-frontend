@@ -1,4 +1,3 @@
-/** One area's suggestions (Content, Brand, Leads & sales…): the same page under each section's name */
 import { useState } from 'react'
 import { CheckCircle2, ChevronDown, ChevronRight, Lightbulb } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -12,8 +11,6 @@ import { ItemList } from './ItemList'
 import { TOP, VISIBLE } from '../constants'
 import { SimilarCtx } from '../context/similar'
 
-/** One area's suggestions. eyebrow/title let other sections (e.g. Brand) show the same page under their own name;
- *  `also` adds other areas' suggestions to the same list (Leads & sales shows lead and sales ideas together). */
 export function AreaPage({ areaId, also = [], eyebrow = 'Suggestions', title, description }: {
   areaId: AreaId
   also?: AreaId[]

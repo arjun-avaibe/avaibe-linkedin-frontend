@@ -1,7 +1,3 @@
-/**
- * Every backend address in one place (relative to /api). When the backend renames or moves an endpoint,
- * change it here only.
- */
 export const API_ENDPOINTS = {
   AUTH: {
     ME: '/auth/me',

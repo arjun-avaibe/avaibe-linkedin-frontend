@@ -1,6 +1,3 @@
-/** Small helpers for the mock backend: a repeatable random generator, UAE time, and statistics. */
-
-/** Repeatable pseudo-random numbers (mulberry32), so the sample data looks the same on every reset */
 export function rng(seed: number) {
   let a = seed >>> 0
   const next = () => {
@@ -24,7 +21,6 @@ export function rng(seed: number) {
       return items[items.length - 1][0]
     },
     chance: (p: number) => next() < p,
-    /** Log-normal noise around 1 (spread ~ how wild the numbers are) */
     noise: (spread = 0.45) => {
       const u = Math.max(next(), 1e-9)
       const v = next()
@@ -37,7 +33,7 @@ export type Rng = ReturnType<typeof rng>
 
 export const DAY = 86_400_000
 export const HOUR = 3_600_000
-const UAE_OFFSET = 4 * HOUR // Gulf Standard Time, no daylight saving
+const UAE_OFFSET = 4 * HOUR
 const IST_OFFSET = 5.5 * HOUR
 
 export const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] as const
@@ -59,7 +55,6 @@ export const uaeTime = (ts: number) => uaeIso(ts).slice(11, 16)
 export const uaeHour = (ts: number) => new Date(ts + UAE_OFFSET).getUTCHours()
 export const uaeWeekday = (ts: number) => WEEKDAYS[new Date(ts + UAE_OFFSET).getUTCDay()]
 
-/** UAE midnight of a "YYYY-MM-DD" date, as a UTC timestamp */
 export const uaeMidnight = (date: string) => Date.parse(`${date}T00:00:00+04:00`)
 
 export function slotOf(hour: number): string {

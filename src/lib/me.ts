@@ -1,13 +1,9 @@
-/**
- * Who you are, for the sidebar profile block and the top-right picture: one source so both always match.
- * The display name (local mode) and the profile photo are kept in this browser only; nothing is uploaded.
- */
 import { useEffect, useState } from 'react'
 import { ROLE_LABELS, useAuth } from '@/context/auth'
 import { initials, readProfileName } from '@/pages/profile/utils'
 
 const PHOTO_KEY = 'avaibe.profilePhoto'
-const PHOTO_SIZE = 160 // px, square: plenty for a 40px avatar on a sharp screen, and small to store
+const PHOTO_SIZE = 160
 
 export function readProfilePhoto(): string | null {
   try {
@@ -17,7 +13,6 @@ export function readProfilePhoto(): string | null {
   }
 }
 
-/** Crop the image to a centred square, shrink it, and keep it in this browser */
 export async function saveProfilePhoto(file: File): Promise<void> {
   if (!file.type.startsWith('image/')) throw new Error('Choose an image file (JPG, PNG or WebP)')
   if (file.size > 10 * 1024 * 1024) throw new Error('That image is over 10 MB')
@@ -46,9 +41,7 @@ export async function saveProfilePhoto(file: File): Promise<void> {
 export function removeProfilePhoto() {
   try {
     localStorage.removeItem(PHOTO_KEY)
-  } catch {
-    /* nothing stored */
-  }
+  } catch {}
   window.dispatchEvent(new Event('profile-changed'))
 }
 

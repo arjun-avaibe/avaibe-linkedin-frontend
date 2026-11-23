@@ -1,6 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
-/** Shown for the moment a page's code is loading */
 export function PageLoading() {
   return (
     <div className="mx-auto max-w-page space-y-3 pt-2">

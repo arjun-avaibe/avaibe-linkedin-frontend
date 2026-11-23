@@ -1,7 +1,3 @@
-/**
- * Sample data for mock mode. Everything is invented (people, companies, numbers) and dated relative to today,
- * so the screens always look current. The same seed gives the same data on every reset.
- */
 import type {
   Account,
   AccountDoc,
@@ -58,8 +54,6 @@ export interface MockDb {
 
 export const DB_VERSION = 1
 
-// ---------------------------------------------------------------- settings defaults
-
 export const DEFAULT_SEGMENTS: SegmentSettings = {
   uae_country: ['United Arab Emirates'],
   uae_cities: ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Ras Al Khaimah', 'Al Ain'],
@@ -93,8 +87,6 @@ export const DEFAULT_BRAND: BrandSettings = {
   competitors: ['Generic ERP vendors', 'Offshore agencies'],
   languages: ['English', 'Arabic'],
 }
-
-// ---------------------------------------------------------------- content building blocks
 
 const TOPICS = [
   'School ERP',
@@ -179,8 +171,6 @@ function caption(r: Rng, topic: (typeof TOPICS)[number], cta: string | null, tag
   return lines.join('\n')
 }
 
-// ---------------------------------------------------------------- performance model
-
 const FORMAT_LIFT: Record<PostFormat, number> = {
   image: 1,
   carousel: 1.45,
@@ -242,8 +232,6 @@ export function buildSnapshot(
   }
 }
 
-// ---------------------------------------------------------------- audience
-
 export function computeShares(rows: AudienceRow[] | { dimension: string; value: string; pct: number | null }[], seg: SegmentSettings): Shares {
   const total = (dim: string, match: (v: string) => boolean) => {
     const rs = rows.filter((r) => r.dimension === dim)
@@ -281,8 +269,6 @@ function audienceRows(r: Rng, uaeBias: number): AudienceRow[] {
   ]
 }
 
-// ---------------------------------------------------------------- the seed
-
 export function createSeed(now = Date.now()): MockDb {
   const r = rng(20261123)
   let nextId = 1
@@ -300,7 +286,6 @@ export function createSeed(now = Date.now()): MockDb {
 
   const settings = { segments: DEFAULT_SEGMENTS, performance: DEFAULT_PERFORMANCE, brand: DEFAULT_BRAND }
 
-  // ---- posts
   const posts: StoredPost[] = []
   const plan: { accountId: number; count: number; base: number; days: number; author: string }[] = [
     { accountId: 1, count: 64, base: 1400, days: 210, author: 'AVAIBE' },
@@ -310,10 +295,8 @@ export function createSeed(now = Date.now()): MockDb {
   ]
   for (const p of plan) {
     for (let i = 0; i < p.count; i++) {
-      // Spread posts over the period, newest a day or two ago
       const daysAgo = 1.2 + (i / p.count) * p.days + r.next() * 2
       let ts = now - daysAgo * DAY
-      // Mostly working days, at office hours
       let wd = uaeWeekday(ts)
       if ((wd === 'Saturday' || wd === 'Sunday') && r.chance(0.8)) {
         ts -= (wd === 'Saturday' ? 1 : 2) * DAY
@@ -331,7 +314,7 @@ export function createSeed(now = Date.now()): MockDb {
       const cta = r.chance(0.75) ? r.pick(CTAS) : null
       const tags = r.chance(0.8) ? [...new Set([r.pick(HASHTAGS), r.pick(HASHTAGS), r.pick(HASHTAGS)])] : []
       const slot = slotOf(uaeHour(ts))
-      const growth = 1 + (1 - daysAgo / p.days) * 0.5 // the page grows over time
+      const growth = 1 + (1 - daysAgo / p.days) * 0.5
       const impressions = Math.round(
         p.base * FORMAT_LIFT[format] * (SLOT_LIFT[slot] ?? 0.7) * (DAY_LIFT[uaeWeekday(ts)] ?? 1) * growth * r.noise(0.4),
       )
@@ -354,7 +337,6 @@ export function createSeed(now = Date.now()): MockDb {
       for (const cp of checkpoints) {
         const due = ts + CHECKPOINT_HOURS[cp] * HOUR
         if (due > now) continue
-        // Recent posts: leave a gap or two so "Numbers due" has something to show
         if (daysAgo < 9 && (cp === '48h' || cp === '7d') && r.chance(0.45)) continue
         if (cp === '1h' && r.chance(0.35)) continue
         snapshots.push(buildSnapshot(id(), postId, cp, ts, totals, format))
@@ -392,7 +374,6 @@ export function createSeed(now = Date.now()): MockDb {
     }
   }
 
-  // ---- planned posts (Publishing queue)
   const planned: PlannedPost[] = []
   const at = (daysFromNow: number, hour: number) => uaeMidnight(uaeDate(now + daysFromNow * DAY)) + hour * HOUR
   const mkPlanned = (
@@ -516,7 +497,6 @@ export function createSeed(now = Date.now()): MockDb {
       details: { title: 'A day at AVAIBE', subtitles: true },
     }),
   )
-  // Two published planner posts, linked to tracked posts
   for (const post of posts.filter((p) => p.account_id === 1 && p.ref).slice(0, 2)) {
     planned.push(
       mkPlanned({
@@ -534,7 +514,6 @@ export function createSeed(now = Date.now()): MockDb {
     planned[planned.length - 1].ref = post.ref
   }
 
-  // ---- leads
   const companies = [
     ['Al Noor International School', 'Education', 'Principal', true, 'School management system'],
     ['Desert Bloom Academy', 'Education', 'Head of IT', false, 'School management system'],
@@ -592,11 +571,10 @@ export function createSeed(now = Date.now()): MockDb {
       post_format: null,
       post_date: null,
       via_account_name: null,
-      updated_at: new Date(now - i * 2 * DAY).toISOString(), // some open deals go quiet (Pipeline flags them)
+      updated_at: new Date(now - i * 2 * DAY).toISOString(),
     }
   })
 
-  // ---- team
   const team: TeamMember[] = [
     { id: id(), email: 'rania@avaibe.example', name: 'Rania Haddad', role: 'admin', can_switch_accounts: true, active: true, last_login_at: new Date(now - 2 * HOUR).toISOString() },
     { id: id(), email: 'karan@avaibe.example', name: 'Karan Mehta', role: 'admin', can_switch_accounts: true, active: true, last_login_at: new Date(now - DAY).toISOString() },
@@ -605,7 +583,6 @@ export function createSeed(now = Date.now()): MockDb {
     { id: id(), email: 'intern@avaibe.example', name: null, role: 'viewer', can_switch_accounts: false, active: false, last_login_at: new Date(now - 40 * DAY).toISOString() },
   ]
 
-  // ---- page daily stats (company pages) and member stats (founders)
   const pageDaily: Record<number, PageDay[]> = {}
   for (const a of accounts) {
     const days: PageDay[] = []
@@ -633,7 +610,6 @@ export function createSeed(now = Date.now()): MockDb {
     pageDaily[a.id] = days
   }
 
-  // ---- page audience (followers / visitors) for the company page
   const audSnap = (asOf: string, audience: 'followers' | 'visitors', total: number, uae: number): PageAudienceSnapshot => {
     const rows = [
       { dimension: 'location' as const, value: 'United Arab Emirates', count: Math.round(total * uae), pct: Math.round(uae * 1000) / 10 },
@@ -663,7 +639,6 @@ export function createSeed(now = Date.now()): MockDb {
     ],
   }
 
-  // ---- shared documents
   const docs: Record<string, AccountDoc<keyof AccountDocs>> = {}
   const doc = <K extends keyof AccountDocs>(accountId: number, kind: K, data: AccountDocs[K]) => {
     docs[`${accountId}:${kind}`] = { kind, data, updated_by: 'rania@avaibe.example', updated_at: new Date(now - 6 * DAY).toISOString() }
@@ -698,7 +673,6 @@ export function createSeed(now = Date.now()): MockDb {
     doc(aid, 'competitors', { competitors: [] })
   }
 
-  // ---- LinkedIn connections (founders can publish from the app)
   const connections: LinkedInConnection[] = [
     { account_id: 2, name: 'Rania Haddad', email: 'rania@avaibe.example', picture_url: null, expires_at: new Date(now + 42 * DAY).toISOString(), expired: false, days_left: 42, connected_at: new Date(now - 18 * DAY).toISOString() },
   ]

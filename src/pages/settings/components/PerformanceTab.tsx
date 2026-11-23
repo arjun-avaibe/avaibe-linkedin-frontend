@@ -10,7 +10,6 @@ import type { PerformanceSettings } from '@/lib/api'
 
 export function PerformanceTab({ current, defaults }: { current: PerformanceSettings; defaults: PerformanceSettings }) {
   const save = useSaveSettings()
-  // Cut-offs and trend threshold are edited as percentages
   const [f, setF] = useState({
     min_history: String(current.min_history),
     min_slot_posts: String(current.min_slot_posts),

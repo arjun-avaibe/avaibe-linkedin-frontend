@@ -1,7 +1,3 @@
-/**
- * The analytics the backend computes, worked out from the sample posts. Simplified on purpose:
- * the goal is believable, consistent screens, not the backend's exact statistics.
- */
 import type {
   AudienceStats,
   CalendarData,
@@ -53,8 +49,6 @@ const METRIC_LABELS: Record<string, string> = {
   reactions: 'reactions',
   followers_gained: 'followers gained',
 }
-
-// ---------------------------------------------------------------- snapshots and classification
 
 export function snapAt(p: StoredPost, cp: CheckpointQ): Snapshot | undefined {
   if (cp === 'latest') {
@@ -116,7 +110,7 @@ function sharesOf(db: MockDb, p: StoredPost) {
     return Math.min(1, rs.filter((r) => list.some((x) => r.value.toLowerCase().includes(x.toLowerCase()))).reduce((s, r) => s + r.pct, 0) / 100)
   }
   return {
-    uae_share: total('location', [...seg.uae_country]), // the country row already covers its cities
+    uae_share: total('location', [...seg.uae_country]),
     education_share: total('industry', seg.education_industry),
     decision_maker_share: total('seniority', seg.decision_seniority),
     tech_share: total('job_function', seg.tech_functions),
@@ -149,8 +143,6 @@ function suggestedCheckpoint(posts: StoredPost[]): Checkpoint {
   }
   return best
 }
-
-// ---------------------------------------------------------------- overview, rankings, formats, groups
 
 export function overview(db: MockDb, accountId: number, cp: CheckpointQ): Overview {
   const posts = accountPosts(db, accountId)
@@ -219,8 +211,6 @@ export function groups(db: MockDb, accountId: number, cp: CheckpointQ, by: strin
     })
     .sort((a, b) => b.posts - a.posts)
 }
-
-// ---------------------------------------------------------------- timing
 
 export function heatmap(db: MockDb, accountId: number, cp: CheckpointQ, metric: string, format?: string, range?: Range): Heatmap {
   const minPosts = db.settings.performance.min_slot_posts
@@ -377,9 +367,6 @@ function backtest(n: number) {
   }
 }
 
-// ---------------------------------------------------------------- calendar
-
-/** Holidays, periods and events. Lunar dates are approximate and marked "expected". */
 function yearItems(y: number): CalendarItem[] {
   const it = (start: string, end: string, title: string, kind: CalendarItem['kind'], note = '', status: CalendarItem['status'] = 'confirmed'): CalendarItem => ({
     start,
@@ -506,8 +493,6 @@ export function calendar(db: MockDb, accountId: number, from: string, to: string
   }
 }
 
-// ---------------------------------------------------------------- consistency, due numbers, suggestions
-
 function windowStats(db: MockDb, posts: StoredPost[], cp: CheckpointQ): WindowStats {
   const snaps = posts.map((p) => snapAt(p, cp))
   return {
@@ -548,7 +533,6 @@ export function consistency(db: MockDb, accountId: number, cp: CheckpointQ): Con
       uae_impressions_trend: trend(current.median_uae_impressions, previous.median_uae_impressions, th),
     }
   })
-  // Weeks start on Monday (UAE)
   const todayTs = uaeMidnight(uaeDate(now))
   const dow = (new Date(todayTs + 4 * HOUR).getUTCDay() + 6) % 7
   const thisMonday = todayTs - dow * DAY

@@ -4,11 +4,9 @@ import { AreaPage } from './components/AreaPage'
 
 export function SuggestionsPage() {
   const { area } = useParams()
-  // Brand, Leads and Sales suggestions live in their own sidebar sections
   if (area && OWN_SECTION[area as AreaId]) return <Navigate to={areaPath(area as AreaId)} replace />
   const def = AREAS.find((a) => a.id === area)
   if (!def) return <Navigate to="/suggestions/content" replace />
-  // Content suggestions are what the sidebar's Content › Suggestions opens
   if (def.id === 'content') return <AreaPage key={def.id} areaId="content" eyebrow="Content" title="Suggestions" />
   return <AreaPage key={def.id} areaId={def.id} />
 }

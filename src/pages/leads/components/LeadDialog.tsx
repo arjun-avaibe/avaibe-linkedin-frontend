@@ -51,7 +51,6 @@ export function LeadDialog({ accountId, initial, onClose }: { accountId: number;
           qualified: null,
         },
   )
-  // Quick add shows the essentials; editing opens everything
   const [more, setMore] = useState(!!initial)
   const set = <K extends keyof LeadInput>(k: K, v: LeadInput[K]) => setF((x) => ({ ...x, [k]: v }))
   const text = (v: string) => (v.trim() ? v : null)
@@ -80,7 +79,6 @@ export function LeadDialog({ accountId, initial, onClose }: { accountId: number;
           <DialogTitle>{initial ? 'Edit lead' : 'Add a lead'}</DialogTitle>
           <DialogDescription>Business details only. Don’t enter people’s names, emails or phone numbers.</DialogDescription>
         </DialogHeader>
-        {/* Quick add: what's needed to learn where leads come from and whether they're qualified */}
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5 sm:col-span-2">
             <Label htmlFor="l-company">Company</Label>

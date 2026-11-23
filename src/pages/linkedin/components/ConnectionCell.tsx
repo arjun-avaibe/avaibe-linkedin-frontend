@@ -16,11 +16,10 @@ export function ConnectionCell({ account, connection, configured }: { account: A
   const connect = () =>
     connectLinkedIn.mutate(account.id, {
       onSuccess: ({ url }) => {
-        window.location.href = url // LinkedIn sign-in, then back to this page
+        window.location.href = url
       },
       onError: (e) => toast.error(e.message),
     })
-  // Stays busy after success: the browser is on its way to LinkedIn
   const busy = connectLinkedIn.isPending || connectLinkedIn.isSuccess
 
   if (!connection) {

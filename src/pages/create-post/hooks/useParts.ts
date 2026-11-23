@@ -4,7 +4,6 @@ import type { AnalysePart } from '@/lib/api'
 import { FORMAT_ICON, VISUAL_LABEL } from '../constants'
 import type { Draft, Visual } from '../types'
 
-/** The parts of this post Analyse can look at, with what's there now */
 export function useParts(draft: Draft, visual: Visual) {
   const tz = useTz()
   const parts: { value: AnalysePart; label: string; icon: typeof Type; detail: string }[] = [

@@ -1,6 +1,5 @@
 import { AreaPage } from '@/pages/suggestions/components/AreaPage'
 
-/** Leads & sales › Suggestions: bringing in enquiries and turning them into won business, in one list */
 export function LeadSuggestionsPage() {
   return (
     <AreaPage

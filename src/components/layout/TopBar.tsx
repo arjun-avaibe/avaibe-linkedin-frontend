@@ -1,7 +1,3 @@
-/**
- * Top-right of every page: notifications and your profile picture.
- * Notifications stay minimal on purpose: one line per kind of thing (never one per post), at most 5 lines.
- */
 import { useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { addDays, format, parseISO } from 'date-fns'
@@ -39,7 +35,6 @@ export function TopBar() {
   const { pathname } = useLocation()
   return (
     <div className="ml-auto flex items-center gap-2">
-      {/* Writing a post is the most common job, so it is one click from every page (not shown on the editor itself) */}
       {auth.can('editor') && !pathname.startsWith('/create') && (
         <Link to="/create" className={cn(buttonVariants({ size: 'sm' }), 'rounded-full')}>
           <SquarePen /> New post
@@ -51,10 +46,8 @@ export function TopBar() {
   )
 }
 
-// ---------------------------------------------------------------- notifications
-
 interface Note {
-  key: string // changes when the content changes, so a new situation counts as unread again
+  key: string
   tone: 'alert' | 'todo' | 'info'
   icon: typeof Bell
   text: string
@@ -84,7 +77,6 @@ function useNotes(): Note[] {
   return useMemo(() => {
     const notes: Note[] = []
     const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
-    // Problems first, then to-dos, then what's coming up
     const problems = planned.filter((p) => p.status === 'failed' || p.status === 'missed').length
     if (problems) {
       notes.push({
@@ -110,7 +102,6 @@ function useNotes(): Note[] {
         to: '/publishing?status=action',
       })
     }
-    // Holidays and industry events in the next 7 days (UAE time), soonest first
     const upcoming = (cal?.items ?? [])
       .filter((i) => HOLIDAY_KINDS.has(i.kind) && i.end >= today)
       .sort((a, b) => a.start.localeCompare(b.start))
@@ -135,14 +126,11 @@ function Notifications() {
   const unread = notes.filter((n) => !seen.includes(n.key)).length
   const open = (o: boolean) => {
     if (!o || !notes.length) return
-    // Opening the list marks what's in it as seen; only these keys are kept, so the store never grows
     const keys = notes.map((n) => n.key)
     setSeen(keys)
     try {
       localStorage.setItem(SEEN_KEY, JSON.stringify(keys))
-    } catch {
-      /* private window: the dot simply comes back next time */
-    }
+    } catch {}
   }
   return (
     <Popover onOpenChange={open}>
@@ -183,8 +171,6 @@ function Notifications() {
     </Popover>
   )
 }
-
-// ---------------------------------------------------------------- profile picture: everything about you
 
 const THEME_OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },

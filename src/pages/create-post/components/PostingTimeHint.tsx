@@ -1,8 +1,3 @@
-/**
- * Posting-time advice inside the new/edit post dialog: for the chosen day (or tomorrow, before a date is picked),
- * what kind of day it is and what this account's own past posts say, with one click to use the suggested slot.
- * The same advice as the Calendar's day panel (lib/timing-advice).
- */
 import { addDays, format, parseISO } from 'date-fns'
 import { Clock } from 'lucide-react'
 import { todayUae, ymd } from '@/components/period'
@@ -20,10 +15,8 @@ export function PostingTimeHint({
   onPick,
 }: {
   accountId: number
-  /** The dialog's date-time field ("YYYY-MM-DDTHH:mm" in `zone`), or "" when not set */
   scheduled: string
   zone: string
-  /** Set the field to this value (same format and zone) */
   onPick: (zonedInput: string) => void
 }) {
   const today = todayUae()

@@ -1,8 +1,3 @@
-/**
- * Leads & sales › Results: what LinkedIn brings the business.
- * From people seeing the posts to won deals, which posts brought enquiries, and where the money came from.
- * Worked out in the browser from the posts and the Leads log: nothing new is needed from the backend.
- */
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
@@ -26,7 +21,6 @@ export function ResultsPage() {
   const { account, accounts } = useAccount()
   const [period, setPeriod] = useState('90')
   const { data: leads = [], isLoading: leadsLoading } = useLeads(account?.id)
-  // Leads often come through a founder's post, so the company page is shown with its founder profiles
   const { data: allPosts = [], isLoading: postsLoading } = useAllPosts()
 
   const r = useMemo(() => {
@@ -39,7 +33,6 @@ export function ResultsPage() {
     const won = fromLinkedIn.filter((l) => l.stage === 'won')
     const sumAed = (ls: Lead[]) => ls.reduce((s, l) => s + (l.value_aed ?? 0), 0)
 
-    // Posts that brought leads (any time: a lead can arrive weeks after the post), counted for leads in the period
     const postById = new Map(allPosts.map((p) => [p.id, p]))
     const byPost = new Map<number, Lead[]>()
     for (const l of periodLeads) if (l.post_id) byPost.set(l.post_id, [...(byPost.get(l.post_id) ?? []), l])
@@ -61,7 +54,6 @@ export function ResultsPage() {
       })
       .sort((a, b) => b.qualified - a.qualified || b.leads - a.leads || b.wonAed - a.wonAed)
 
-    // Where the money came from: every source (LinkedIn and others), so LinkedIn's share is visible
     const group = (key: (l: Lead) => string) => {
       const m = new Map<string, { leads: number; won: number; wonAed: number; openAed: number }>()
       for (const l of periodLeads) {

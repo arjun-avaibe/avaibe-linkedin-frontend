@@ -1,4 +1,3 @@
-/** Leads & sales: React Query hooks for the Leads log and the Pipeline (the list itself, useLeads, is shared) */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { keys } from '@/hooks/queries'

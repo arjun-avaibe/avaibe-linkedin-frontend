@@ -1,8 +1,3 @@
-/**
- * One function per backend endpoint (addresses in endpoints.ts, transport in client.ts).
- * Screens don't call these directly: they use the React Query hooks in each page's queries/ folder
- * (or src/hooks/queries.ts for the shared ones).
- */
 import { API_BASE, fileForm, http, toForm } from './client'
 import { API_ENDPOINTS as E } from './endpoints'
 import type {
@@ -53,12 +48,9 @@ import type {
 type SettingsSection = 'segments' | 'performance' | 'brand'
 
 export const httpApi = {
-  // ---- accounts
   accounts: () => http.get<Account[]>(E.ACCOUNTS.LIST),
   createAccount: (body: Omit<Account, 'id'>) => http.post<Account>(E.ACCOUNTS.LIST, body),
 
-  // ---- posts and their numbers
-  /** Omit account_id for all accounts */
   posts: (params: { account_id?: number; format?: string; checkpoint?: CheckpointQ; metric?: string }) => http.get<Post[]>(E.POSTS.LIST, params),
   post: (id: number) => http.get<Post>(E.POSTS.ONE(id)),
   createPost: (body: PostInput) => http.post<Post>(E.POSTS.LIST, body),
@@ -68,7 +60,6 @@ export const httpApi = {
   deleteSnapshot: (postId: number, checkpoint: Checkpoint) => http.del(E.POSTS.SNAPSHOT(postId, checkpoint)),
   saveAudience: (postId: number, rows: AudienceRow[]) => http.put<Post>(E.POSTS.AUDIENCE(postId), { rows }),
 
-  // ---- analysis
   overview: (p: { account_id: number; checkpoint: CheckpointQ }) => http.get<Overview>(E.ANALYTICS.OVERVIEW, p),
   suggestions: (p: { account_id: number }) => http.get<SuggestionsResult>(E.ANALYTICS.SUGGESTIONS, p),
   dueSnapshots: (p: { account_id: number }) => http.get<DueSnapshot[]>(E.ANALYTICS.DUE_SNAPSHOTS, p),
@@ -77,7 +68,6 @@ export const httpApi = {
   calendar: (p: { account_id: number; from: string; to: string }) => http.get<CalendarData>(E.CALENDAR.MONTH, p),
   calendarItems: (p: { from: string; to: string }) => http.get<{ from: string; to: string; items: CalendarItem[] }>(E.CALENDAR.ITEMS, p),
 
-  // ---- page audience, documents, imports
   pageAudience: (accountId: number) => http.get<PageAudienceSnapshot[]>(E.ACCOUNTS.PAGE_AUDIENCE(accountId)),
   savePageAudience: (accountId: number, body: PageAudienceInput) => http.put<{ saved: number }>(E.ACCOUNTS.PAGE_AUDIENCE(accountId), body),
   deletePageAudience: (accountId: number, as_of: string, audience: string) => http.del(E.ACCOUNTS.PAGE_AUDIENCE(accountId), { as_of, audience }),
@@ -91,19 +81,16 @@ export const httpApi = {
     const form = new FormData()
     files.forEach((f) => form.append('files', f))
     if (exportedOn) form.append('exported_on', exportedOn)
-    // Company-page exports into a founder/personal profile need an explicit yes (the API refuses otherwise)
     if (confirmProfile) form.append('confirm_profile', '1')
     return http.upload<ExportImportResult>(E.IMPORT.LINKEDIN_EXPORT, form, { account_id: accountId })
   },
 
-  // ---- leads
   leads: (accountId: number) => http.get<Lead[]>(E.LEADS.LIST, { account_id: accountId }),
   createLead: (body: LeadInput) => http.post<Lead>(E.LEADS.LIST, body),
   updateLead: (id: number, body: LeadInput) => http.put<Lead>(E.LEADS.ONE(id), body),
   deleteLead: (id: number) => http.del(E.LEADS.ONE(id)),
   leadReplied: (id: number) => http.post<Lead>(E.LEADS.REPLIED(id)),
 
-  // ---- who you are, and the team
   me: () => http.get<Me>(E.AUTH.ME),
   logout: () => http.post<{ signed_out: boolean }>(E.AUTH.LOGOUT),
   team: () => http.get<{ members: TeamMember[]; default_account_id: number | null }>(E.TEAM.LIST),
@@ -112,13 +99,11 @@ export const httpApi = {
   removeMember: (id: number) => http.del(E.TEAM.MEMBER(id)),
   setDefaultAccount: (accountId: number) => http.put<{ default_account_id: number }>(E.TEAM.DEFAULT_ACCOUNT, { default_account_id: accountId }),
 
-  // ---- settings
   settings: () => http.get<AppSettings>(E.SETTINGS.ALL),
   saveSettings: <K extends SettingsSection>(section: K, body: AppSettings['current'][K]) => http.put<AppSettings['current'][K]>(E.SETTINGS.SECTION(section), body),
   resetSettings: (section: SettingsSection) => http.post<unknown>(E.SETTINGS.RESET(section)),
   claudeStatus: () => http.get<ClaudeStatus>(E.SETTINGS.CLAUDE),
 
-  // ---- suggestions and AI
   decisions: (accountId: number) => http.get<Decision[]>(E.SUGGESTIONS.DECISIONS, { account_id: accountId }),
   decide: (body: { account_id: number; key: string; status: DecisionStatus | null }) =>
     http.put<{ key: string; status: DecisionStatus | null }>(E.SUGGESTIONS.DECISIONS, body),
@@ -162,13 +147,11 @@ export const httpApi = {
     return attachment ? http.upload<ChatRun>(E.AI.POST_CHAT, toForm(body, attachment)) : http.post<ChatRun>(E.AI.POST_CHAT, body)
   },
 
-  // ---- LinkedIn
   linkedinConfig: () => http.get<LinkedInConfig>(E.LINKEDIN.CONFIG),
   linkedinConnections: () => http.get<LinkedInConnection[]>(E.LINKEDIN.CONNECTIONS),
   linkedinAuthUrl: (accountId: number) => http.get<{ url: string }>(E.LINKEDIN.AUTH_URL, { account_id: accountId }),
   linkedinDisconnect: (accountId: number) => http.del(E.LINKEDIN.CONNECTION(accountId)),
 
-  // ---- publishing
   planned: (accountId: number) => http.get<PlannedPost[]>(E.PLANNER.LIST, { account_id: accountId }),
   createPlanned: (body: PlannedPostInput) => http.post<PlannedPost>(E.PLANNER.LIST, body),
   updatePlanned: (id: number, body: PlannedPostInput) => http.put<PlannedPost>(E.PLANNER.ONE(id), body),
@@ -179,7 +162,6 @@ export const httpApi = {
   uploadPlannedImage: (id: number, file: File) => http.upload<PlannedPost>(E.PLANNER.IMAGE(id), fileForm(file)),
   removePlannedImage: (id: number) => http.del<PlannedPost>(E.PLANNER.IMAGE(id)),
   uploadPlannedMedia: (id: number, file: File) => http.upload<PlannedPost>(E.PLANNER.MEDIA(id), fileForm(file)),
-  /** Addresses for <img> / links, not calls */
   plannedImageUrl: (id: number, bust?: string) => `${API_BASE}${E.PLANNER.IMAGE(id)}${bust ? `?v=${encodeURIComponent(bust)}` : ''}`,
   plannedMediaUrl: (id: number) => `${API_BASE}${E.PLANNER.MEDIA(id)}`,
 }

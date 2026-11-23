@@ -2,7 +2,6 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import type { Lead } from '@/lib/api'
 import { SOURCE_LABEL } from '../constants'
 
-/** Where leads come from: by source, and by the topic of the post they came from (counts, plus how many were won) */
 export function Sources({ leads }: { leads: Lead[] }) {
   const group = (key: (l: Lead) => string | null) => {
     const m = new Map<string, { n: number; won: number; uae: number }>()

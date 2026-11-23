@@ -2,7 +2,6 @@ import { ExternalLink, FileText, ListChecks } from 'lucide-react'
 import { api, type PlannedPost } from '@/lib/api'
 import { DURATION_LABELS } from '@/pages/create-post/constants'
 
-/** The format-specific parts of a queued post, shown under its text */
 export function FormatSummary({ p }: { p: PlannedPost }) {
   const d = p.details
   if (p.format === 'poll' && d.question) {

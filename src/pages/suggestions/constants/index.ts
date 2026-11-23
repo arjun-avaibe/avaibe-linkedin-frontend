@@ -1,8 +1,8 @@
 import type { DecisionStatus, Idea, SimilarResult, Suggestion } from '@/lib/api'
 
-export const TOP = 3 // highlighted at the top of each area
+export const TOP = 3
 
-export const VISIBLE = 5 // shown before "Show more"
+export const VISIBLE = 5
 
 export const PRIORITY: Record<Suggestion['priority'], { label: string; cls: string }> = {
   high: { label: 'High priority', cls: 'border-bad/40 bg-bad/10 text-bad-fg' },

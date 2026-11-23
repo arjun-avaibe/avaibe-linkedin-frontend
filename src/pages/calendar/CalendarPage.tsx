@@ -23,7 +23,7 @@ export function CalendarPage() {
   const auth = useAuth()
   const [params, setParams] = useSearchParams()
   const today = todayUae()
-  const monthParam = params.get('month') // yyyy-MM
+  const monthParam = params.get('month')
   const month = startOfMonth(monthParam && /^\d{4}-\d{2}$/.test(monthParam) ? parseISO(`${monthParam}-01`) : parseISO(today))
   const gridStart = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
   const gridEnd = endOfWeek(endOfMonth(month), { weekStartsOn: 1 })
@@ -60,7 +60,6 @@ export function CalendarPage() {
 
   if (!account) return null
 
-  // Month summary for the selected account's own posts
   const inMonth = (d: string) => d.slice(0, 7) === format(month, 'yyyy-MM')
   const own = (data?.posts ?? []).filter((p) => p.account_id === account.id && inMonth(p.date))
   const perDay = new Map<string, number>()
@@ -85,7 +84,6 @@ export function CalendarPage() {
       />
 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
-        {/* Month switcher: the arrows sit on either side of the month they change */}
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon-sm" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
             <ChevronLeft />

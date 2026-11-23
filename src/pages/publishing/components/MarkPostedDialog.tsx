@@ -42,6 +42,3 @@ export function MarkPostedDialog({ p, accountId, onClose }: { p: PlannedPost; ac
   )
 }
 
-/** Approve: the post as it will appear on LinkedIn, with Edit and Publish.
-    A future scheduled time offers Publish now or Publish at that time (the app posts it then).
-    Formats or accounts the app can't post to: Publish copies the text to post by hand. */

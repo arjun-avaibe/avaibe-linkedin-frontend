@@ -19,7 +19,6 @@ export function AiPanel({
 }: {
   accountId: number
   visual: Visual
-  /** A question typed on the Dashboard: opens the chat with it in the reply box */
   ask?: string
   draft: Draft
   onUseText: (text: string) => void
@@ -27,9 +26,7 @@ export function AiPanel({
 }) {
   const [mode, setMode] = useState<(typeof MODES)[number]['value']>(ask ? 'chat' : 'analyse')
   const [include, setInclude] = useState(true)
-  // The prepared (shrunk) file is kept, so a chat doesn't re-process it on every message
   const prepared = useRef<{ key: string; file: File } | null>(null)
-  // force: Analyse sends it whenever the visual is picked there (the switch below is for Chat)
   const getAttachment = async (force = false): Promise<File | null> => {
     if (!visual || (!include && !force) || visual.kind === 'video') return null
     if (prepared.current?.key !== visual.key)
@@ -79,7 +76,6 @@ export function AiPanel({
           </div>
         )}
         {visual && mode === 'chat' && <VisualChip visual={visual} include={include} setInclude={setInclude} />}
-        {/* Both stay mounted, so switching modes never loses an analysis or a conversation */}
         <div className={cn(mode !== 'analyse' && 'hidden')}>
           <AnalyseMode accountId={accountId} draft={draft} visual={visual} onUseText={onUseText} onUsePoll={onUsePoll} getAttachment={getAttachment} />
         </div>

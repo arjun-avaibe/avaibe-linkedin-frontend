@@ -1,7 +1,3 @@
-/**
- * Help (pinned at the bottom of the sidebar): a short guide to what each part of the app is for, where its numbers
- * come from and what the AI costs. Kept short on purpose: answers to the questions people actually ask.
- */
 import { Link } from 'react-router-dom'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 

@@ -14,9 +14,7 @@ export function loadHidden(): Set<Layer> {
 export function saveHidden(s: Set<Layer>) {
   try {
     localStorage.setItem(STORE, JSON.stringify([...s]))
-  } catch {
-    /* private window: just don't remember */
-  }
+  } catch {}
 }
 
 export const covers = (i: CalendarItem, day: string) => i.start <= day && day <= i.end
@@ -25,5 +23,4 @@ export const postFormat = (f: string) => (FORMAT_LABELS as Record<string, string
 
 export const plannedFormat = (f: string) => (PLANNED_FORMAT_LABELS as Record<string, string>)[f] ?? f
 
-/** Planned posts are either unpublished or scheduled (stored as "approved") until they're published */
 export const plannedStatus = (s: string) => ({ draft: 'unpublished', approved: 'scheduled', publishing: 'publishing' })[s] ?? s

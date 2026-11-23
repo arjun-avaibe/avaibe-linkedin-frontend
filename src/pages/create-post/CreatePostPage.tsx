@@ -1,9 +1,3 @@
-/**
- * Create post (and Edit post): write, check and schedule a LinkedIn post on one page.
- * Left: the post. Right: AI suggestions, which only run when someone clicks Analyse (opening the page costs nothing).
- * Scheduling still follows the approval flow: an approver's "Schedule post" saves and approves in one step;
- * anyone else's sends the draft for approval.
- */
 import { Link, useParams } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccount } from '@/context/account'
@@ -28,6 +22,5 @@ export function CreatePostPage() {
       </div>
     )
   }
-  // key: switching between posts (or to a new one) starts from a clean form
   return <Editor key={editing?.id ?? 'new'} accountId={account.id} accountName={account.name} initial={editing} />
 }

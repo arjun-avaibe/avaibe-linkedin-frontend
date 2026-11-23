@@ -4,7 +4,6 @@ import { fmtNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { VERDICT } from '../constants'
 
-/** One line on the collapsed card: has this been done before, and how did it go? */
 export function SimilarLine({ s, baseline }: { s: SimilarResult; baseline: number | null }) {
   if (s.count === 0) {
     return (
@@ -33,7 +32,6 @@ export function SimilarLine({ s, baseline }: { s: SimilarResult; baseline: numbe
   )
 }
 
-/** In the opened card: the closest past posts, linked */
 export function SimilarList({ s }: { s: SimilarResult }) {
   if (!s.posts.length) return null
   return (

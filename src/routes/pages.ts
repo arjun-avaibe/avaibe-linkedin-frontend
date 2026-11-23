@@ -1,7 +1,3 @@
-/**
- * Every page, loaded only when it is first opened (keeps the first download small).
- * Pages use named exports, so each is mapped to React.lazy's default.
- */
 import { lazy } from 'react'
 
 export const DashboardPage = lazy(() => import('@/pages/dashboard').then((m) => ({ default: m.DashboardPage })))

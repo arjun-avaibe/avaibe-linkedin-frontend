@@ -52,7 +52,6 @@ export function ItemCard({ item, accountId, highlight, muted }: { item: Item; ac
                   <Badge variant="outline" className={PRIORITY[item.rule.priority].cls}>
                     {PRIORITY[item.rule.priority].label}
                   </Badge>
-                  {/* Page-setup items are good practice, not something measured in this account's numbers */}
                   <Badge variant="secondary">{item.rule.category === 'page' ? 'Page setup' : item.rule.category === 'lead' ? 'From your Leads log' : 'From your data'}</Badge>
                 </>
               ) : (

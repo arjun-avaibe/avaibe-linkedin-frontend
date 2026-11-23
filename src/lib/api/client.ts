@@ -1,9 +1,3 @@
-/**
- * The one place that talks to the backend over HTTP: session cookie, Django's CSRF header, errors, sign-in redirect.
- * Use the `http` helpers (get / post / put / del / upload); never call fetch from a screen.
- */
-
-/** An error answer from the API (the sample data answers with the same error) */
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -15,7 +9,6 @@ export class ApiError extends Error {
 export type Params = Record<string, string | number | boolean | null | undefined>
 type Options = { params?: Params; body?: unknown; form?: FormData }
 
-/** Where the backend is mounted; in dev Vite forwards it to the Django server */
 export const API_BASE = '/api'
 
 function csrfToken(): string | null {
@@ -34,7 +27,7 @@ function qs(params?: Params): string {
 }
 
 async function request<T>(method: string, path: string, opts: Options = {}): Promise<T> {
-  const init: RequestInit = { method, credentials: 'same-origin' } // send the session cookie
+  const init: RequestInit = { method, credentials: 'same-origin' }
   const headers: Record<string, string> = {}
   if (opts.form) {
     init.body = opts.form
@@ -43,14 +36,12 @@ async function request<T>(method: string, path: string, opts: Options = {}): Pro
     headers['Content-Type'] = 'application/json'
   }
   if (method !== 'GET') {
-    // Django's protection against forged cross-site requests: echo the csrftoken cookie back in a header
     const token = csrfToken()
     if (token) headers['X-CSRFToken'] = token
   }
   init.headers = headers
   const res = await fetch(`${API_BASE}${path}${qs(opts.params)}`, init)
   if (res.status === 401 && !path.startsWith('/auth/') && window.location.pathname !== '/signin') {
-    // Session ended or never started: go to the sign-in page
     window.location.href = '/signin'
   }
   if (!res.ok) {
@@ -58,9 +49,7 @@ async function request<T>(method: string, path: string, opts: Options = {}): Pro
     try {
       const data = await res.json()
       msg = typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)
-    } catch {
-      /* non-JSON error */
-    }
+    } catch {}
     throw new ApiError(res.status, msg)
   }
   if (res.status === 204) return undefined as T
@@ -72,11 +61,9 @@ export const http = {
   post: <T>(path: string, body?: unknown, params?: Params) => request<T>('POST', path, { body, params }),
   put: <T>(path: string, body?: unknown, params?: Params) => request<T>('PUT', path, { body, params }),
   del: <T = void>(path: string, params?: Params) => request<T>('DELETE', path, { params }),
-  /** Multipart upload (files) */
   upload: <T>(path: string, form: FormData, params?: Params) => request<T>('POST', path, { form, params }),
 }
 
-/** A JSON body as multipart form fields plus one file (lists and objects are sent as JSON text) */
 export function toForm(body: Record<string, unknown>, file: File): FormData {
   const form = new FormData()
   for (const [k, v] of Object.entries(body)) {
@@ -87,7 +74,6 @@ export function toForm(body: Record<string, unknown>, file: File): FormData {
   return form
 }
 
-/** One file under the field name the backend expects */
 export function fileForm(file: File, field = 'file'): FormData {
   const form = new FormData()
   form.append(field, file)

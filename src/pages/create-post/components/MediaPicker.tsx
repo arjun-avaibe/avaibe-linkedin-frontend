@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { ExternalLink, Upload } from 'lucide-react'
 import { api, type PlannedPost } from '@/lib/api'
 
-/** A chosen image file shown on the page (the temporary link is released when it changes) */
 export function FilePreview({ file }: { file: File }) {
   const [url, setUrl] = useState<string | null>(null)
   useEffect(() => {
