@@ -1,10 +1,10 @@
 import { lazy } from 'react'
 
-export const DashboardPage = lazy(() => import('@/pages/dashboard').then((m) => ({ default: m.DashboardPage })))
-export const DataPage = lazy(() => import('@/pages/data').then((m) => ({ default: m.DataPage })))
-export const ImportPage = lazy(() => import('@/pages/import').then((m) => ({ default: m.ImportPage })))
-export const NewPostPage = lazy(() => import('@/pages/post-new').then((m) => ({ default: m.NewPostPage })))
-export const PostDetailPage = lazy(() => import('@/pages/post-detail').then((m) => ({ default: m.PostDetailPage })))
+export const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage })))
+export const DataPage = lazy(() => import('@/pages/data/DataPage').then((m) => ({ default: m.DataPage })))
+export const ImportPage = lazy(() => import('@/pages/data/ImportPage').then((m) => ({ default: m.ImportPage })))
+export const NewPostPage = lazy(() => import('@/pages/data/NewPostPage').then((m) => ({ default: m.NewPostPage })))
+export const PostDetailPage = lazy(() => import('@/pages/data/PostDetailPage').then((m) => ({ default: m.PostDetailPage })))
 
 export const SuggestionsPage = lazy(() => import('@/pages/suggestions/SuggestionsPage').then((m) => ({ default: m.SuggestionsPage })))
 export const CalendarPage = lazy(() => import('@/pages/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })))

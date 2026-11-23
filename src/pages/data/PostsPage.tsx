@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ExternalLink, Plus, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, Plus, Search } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, PageHeader, PostRef, SimpleSelect } from '@/components/common'
@@ -9,84 +9,13 @@ import { inRange, TimeRangePicker, type TimeRange } from '@/components/time-rang
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
-import { useDueSnapshots, useOverview, usePosts } from '@/hooks/queries'
-import { FORMATS, type Post, type Snapshot } from '@/lib/api'
+import { FORMATS } from '@/lib/api'
 import { FORMAT_LABELS, fmtNumber, fmtPct } from '@/lib/format'
 import { cn } from '@/lib/utils'
-
-const PAGE_SIZES = ['10', '25', '50']
-const MIN_FOR_TYPICAL = 5 // posts needed at the same age before "vs typical" is shown
-/** Default order: latest post first */
-const DEFAULT_SORT = { key: 'date', desc: true } as const
-const SORT_NAMES: Record<string, string> = {
-  date: 'post date',
-  impressions: 'impressions',
-  views: 'views',
-  clicks: 'clicks',
-  ctr: 'CTR',
-  reactions: 'reactions',
-  comments: 'comments',
-  reposts: 'reposts',
-  vs: 'vs typical',
-}
-
-type SortKey = 'date' | 'impressions' | 'views' | 'clicks' | 'ctr' | 'reactions' | 'comments' | 'reposts' | 'vs'
-
-interface Row {
-  post: Post
-  latest?: Snapshot
-  impressions: number | null
-  views: number | null
-  clicks: number | null
-  ctr: number | null
-  reactions: number | null
-  comments: number | null
-  reposts: number | null
-  vs: number | null // impressions ÷ the account's typical post at the same age
-}
-
-const median = (v: number[]) => {
-  if (!v.length) return null
-  const s = [...v].sort((a, b) => a - b)
-  const m = Math.floor(s.length / 2)
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2
-}
-
-/** First line of the caption, like LinkedIn's "Post title" */
-function postTitle(p: Post): string {
-  const first = (p.caption ?? '').split('\n').find((l) => l.trim())?.trim()
-  return first || p.topic || p.ref || `Post ${p.id}`
-}
-
-function buildRows(posts: Post[]): Row[] {
-  // Typical impressions per account and age (checkpoint), from all of that account's posts
-  const byKey = new Map<string, number[]>()
-  for (const p of posts) {
-    for (const s of p.snapshots) {
-      if (s.impressions == null) continue
-      const k = `${p.account_id}:${s.checkpoint}`
-      byKey.set(k, [...(byKey.get(k) ?? []), s.impressions])
-    }
-  }
-  return posts.map((p) => {
-    const latest = p.snapshots[p.snapshots.length - 1]
-    const imp = latest?.impressions ?? null
-    const peers = latest ? byKey.get(`${p.account_id}:${latest.checkpoint}`) ?? [] : []
-    const typical = peers.length >= MIN_FOR_TYPICAL ? median(peers) : null
-    return {
-      post: p,
-      latest,
-      impressions: imp,
-      views: latest?.video_views ?? latest?.newsletter_views ?? null,
-      clicks: latest?.clicks ?? null,
-      ctr: latest?.click_rate ?? null,
-      reactions: latest?.reactions ?? null,
-      comments: latest?.comments ?? null,
-      reposts: latest?.reposts ?? null,
-      vs: imp != null && typical ? imp / typical : null,
-    }
-  })
-}
+import { SortButton, NumTh, Dash, Num, VsTypical } from './components/PostsTableParts'
+import { PAGE_SIZES, DEFAULT_SORT } from './constants/posts'
+import { postTitle, buildRows, viewsBlankReason, type SortKey, type Row } from './utils/posts'
+import { useGetDueSnapshots, useGetOverview, useGetPosts } from '@/pages/data/queries'
 
 /** embedded: shown as the Posts tab of the Data page, which supplies the time range and the page title */
 export function PostsPage({ embedded = false, range: outerRange }: { embedded?: boolean; range?: TimeRange } = {}) {
@@ -98,7 +27,7 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
   const [status, setStatus] = useState<'all' | 'check' | 'due'>('all')
   // Search by post ID (P-0042) or words in the post; looks through all dates
   const [q, setQ] = useState('')
-  const { data: dueList = [] } = useDueSnapshots(account?.id)
+  const { data: dueList = [] } = useGetDueSnapshots(account?.id)
   const dueIds = useMemo(() => new Set(dueList.map((d) => d.post_id)), [dueList])
   const [ownRange, setRange] = useState<TimeRange>({ preset: '90' })
   const range = outerRange ?? ownRange
@@ -107,10 +36,10 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
   const [page, setPage] = useState(0)
 
   // One account at a time (switch accounts at the top left)
-  const { data: probe } = useOverview(account?.id, '24h')
+  const { data: probe } = useGetOverview(account?.id, '24h')
   const cp = probe?.suggested_checkpoint ?? '24h'
   const opts = { format: format === 'all' ? undefined : format, checkpoint: cp }
-  const { data: posts, isLoading } = usePosts(account?.id, opts)
+  const { data: posts, isLoading } = useGetPosts(account?.id, opts)
 
   const rows = useMemo(() => buildRows(posts ?? []), [posts])
 
@@ -316,64 +245,5 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
         </div>
       )}
     </div>
-  )
-}
-
-function SortButton({ label, k, sort, onSort }: { label: string; k: SortKey; sort: { key: SortKey; desc: boolean }; onSort: (k: SortKey) => void }) {
-  const active = sort.key === k
-  const Icon = active ? (sort.desc ? ArrowDown : ArrowUp) : ArrowUpDown
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(k)}
-      title={`Sort by ${SORT_NAMES[k]}`}
-      aria-label={`Sort by ${SORT_NAMES[k]}${active ? (sort.desc ? ', currently highest or latest first' : ', currently lowest or oldest first') : ''}`}
-      className={cn(
-        'group -mx-1.5 inline-flex cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 transition-colors hover:bg-muted hover:text-foreground',
-        active && 'text-foreground',
-      )}
-    >
-      {label}
-      <Icon className={cn('size-3 shrink-0', active ? 'text-primary' : 'opacity-35 group-hover:opacity-100')} />
-    </button>
-  )
-}
-
-function NumTh({ label, k, sort, onSort, hint }: { label: string; k: SortKey; sort: { key: SortKey; desc: boolean }; onSort: (k: SortKey) => void; hint?: string }) {
-  return (
-    <th className="px-3 py-3 text-right font-medium whitespace-nowrap" title={hint} aria-sort={sort.key === k ? (sort.desc ? 'descending' : 'ascending') : 'none'}>
-      <SortButton label={label} k={k} sort={sort} onSort={onSort} />
-    </th>
-  )
-}
-
-const Dash = () => <span className="text-muted-foreground">—</span>
-
-/** Why a post has no view count (shown on hover), so a blank isn't mistaken for missing data */
-function viewsBlankReason(format: string): string {
-  if (format === 'video') return 'Video views not recorded yet (LinkedIn’s API keeps them for about 6 months)'
-  if (format === 'newsletter') return 'Article views come only from LinkedIn’s Excel export, not the API'
-  if (format === 'untagged') return 'Set the post type to see whether views apply'
-  return 'LinkedIn doesn’t count views for this post type (only for videos and articles)'
-}
-
-function Num({ v }: { v: number | null }) {
-  return <td className="px-3 py-3 text-right align-top tabular-nums">{v == null ? <Dash /> : fmtNumber(v)}</td>
-}
-
-function VsTypical({ v, checkpoint }: { v: number | null; checkpoint?: string }) {
-  if (v == null) return <span className="text-xs text-muted-foreground" title="Too few posts of the same age to compare yet">—</span>
-  const up = v >= 1.15
-  const down = v <= 0.85
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap tabular-nums',
-        up ? 'bg-good/10 text-good-fg' : down ? 'bg-bad/10 text-bad-fg' : 'bg-muted text-muted-foreground',
-      )}
-      title={`Compared with this account’s usual post at ${checkpoint}`}
-    >
-      {up ? '▲' : down ? '▼' : '≈'} {v.toFixed(1)}×
-    </span>
   )
 }

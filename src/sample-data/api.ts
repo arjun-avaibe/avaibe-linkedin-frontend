@@ -930,9 +930,3 @@ export function getPlannedImageUrl(id: number, _bust?: string): string {
 export function getPlannedMediaUrl(id: number): string {
   return fileUrl('media', id)
 }
-
-export const api = {
-  leads: getLeads,
-  lastImports: getLastImports,
-  calendarItems: getCalendarItems,
-}
