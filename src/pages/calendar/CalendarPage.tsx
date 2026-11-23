@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns'
-import { CalendarClock, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CalendarClock, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/common'
 import { todayUae, ymd } from '@/components/period'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
@@ -81,6 +81,13 @@ export function CalendarPage() {
         eyebrow="Content"
         title="Calendar"
         description="Your posts, planned posts, holidays and events in one view. Click a day to see what to keep in mind and to plan a post for it."
+        actions={
+          auth.can('editor') ? (
+            <Link to="/create?from=calendar" className={buttonVariants({ size: 'sm' })}>
+              <Plus /> New post
+            </Link>
+          ) : undefined
+        }
       />
 
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">

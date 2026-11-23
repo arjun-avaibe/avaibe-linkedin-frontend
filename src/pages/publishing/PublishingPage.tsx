@@ -1,11 +1,8 @@
 import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, PageHeader, SimpleSelect } from '@/components/common'
 import { useAccount } from '@/context/account'
-import { useAuth } from '@/context/auth'
 import { PLANNED_FORMATS, type PlannedFormat } from '@/lib/api'
 import { needsAction, PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { ConnectionBanner } from './components/ConnectionBanner'
@@ -16,7 +13,6 @@ import { useGetPlannedPosts } from '@/pages/publishing/queries'
 
 export function PublishingPage() {
   const { account } = useAccount()
-  const auth = useAuth()
   const { data: connections = [] } = useGetLinkedInConnections()
   const { data: planned, isLoading } = useGetPlannedPosts(account?.id)
   const connection = connections.find((c) => c.account_id === account?.id)
@@ -44,13 +40,6 @@ export function PublishingPage() {
       <PageHeader eyebrow="Content"
         title="Publishing"
         description="Preview a post, then publish it now or at its scheduled time. Text and image posts are published by the app; carousel, video, article and poll posts are posted on LinkedIn by hand, then marked as posted."
-        actions={
-          auth.can('editor') ? (
-            <Button size="sm" onClick={() => navigate(tab === 'all' ? '/create' : `/create?format=${tab}`)}>
-              <Plus /> New {tab === 'all' ? 'post' : `${PLANNED_FORMAT_LABELS[tab].toLowerCase()} post`}
-            </Button>
-          ) : undefined
-        }
       />
 
       <div className="flex flex-wrap items-center gap-3">
@@ -127,7 +116,7 @@ export function PublishingPage() {
         <EmptyState>
           {all.length && (tab !== 'all' || status !== 'all')
             ? 'No posts match these filters.'
-            : 'No posts in the queue. Click “New post” to draft one.'}
+            : 'No posts in the queue. Plan one from the Calendar: New post, or click a day.'}
         </EmptyState>
       ) : (
         <div className="space-y-3">
