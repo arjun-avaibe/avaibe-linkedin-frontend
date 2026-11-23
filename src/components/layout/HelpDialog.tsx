@@ -9,7 +9,7 @@ const SECTIONS: { title: string; items: [string, string][] }[] = [
       ['Data', 'The detail: every post (Posts), page totals and the chart (Content), page visitors and followers. Import LinkedIn’s export from the Posts tab.'],
       ['Suggestions', 'What to post next: topics, formats, timing and calls to action, from your own numbers and, when you click Generate ideas, from Claude.'],
       ['Calendar', 'Posts, holidays and events by day, with the best times to post. Click a day to plan a post for it.'],
-      ['Publishing', 'Every post, unpublished, scheduled or published. New post opens the editor: write and check it (the AI, Analyse and Chat, only runs when you click), then approve to preview and publish now or at its time. Hand-posted formats are marked as posted.'],
+      ['Publishing', 'Every post, unpublished, scheduled or published. Edit opens the editor (new posts start from the Calendar): write and check it (the AI, Analyse and Chat, only runs when you click), then approve to preview and publish now or at its time. Hand-posted formats are marked as posted.'],
       ['Brand · Leads & sales', 'Brand: suggestions and Competitors. Leads & sales: suggestions, the Leads log, the Pipeline (the same leads, by stage) and Results (which posts bring leads and money). Leads are entered by the team: LinkedIn doesn’t share enquiries.'],
     ],
   },
@@ -41,7 +41,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
         </DialogHeader>
         <div className="space-y-5">
           <p className="rounded-lg border px-3 py-2 text-xs text-muted-foreground">
-            Something not working, or access you need? Ask an admin. Your profile, photo, appearance and time zone are under your picture at the
+            Something not working, or access you need? Ask an admin. Your profile, appearance and time zone are under your picture at the
             top right; workspace rules are in{' '}
             <Link to="/settings" onClick={onClose} className="underline">
               Settings

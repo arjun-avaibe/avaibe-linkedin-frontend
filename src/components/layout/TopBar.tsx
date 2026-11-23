@@ -1,9 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { addDays, format, parseISO } from 'date-fns'
-import { toast } from 'sonner'
-import { AlertTriangle, Bell, CalendarDays, Camera, ChevronDown, Clock, Hourglass, Link2, LogOut, Monitor, Moon, SquarePen, Sun, Trash2, UserRound } from 'lucide-react'
-import { buttonVariants } from '@/components/ui/button'
+import { AlertTriangle, Bell, CalendarDays, ChevronDown, Clock, Hourglass, Link2, LogOut, Monitor, Moon, Sun, UserRound } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   DropdownMenu,
@@ -25,22 +23,15 @@ import { UserAvatar } from '@/components/layout/UserAvatar'
 import { todayUae, ymd } from '@/components/period'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
-import { removeProfilePhoto, saveProfilePhoto, useMe } from '@/lib/me'
+import { useMe } from '@/lib/me'
 import { dueByHand } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 import { useGetCalendarItems } from '@/pages/calendar/queries'
 import { useGetPlannedPosts } from '@/pages/publishing/queries'
 
 export function TopBar() {
-  const auth = useAuth()
-  const { pathname } = useLocation()
   return (
     <div className="ml-auto flex items-center gap-2">
-      {auth.can('editor') && !pathname.startsWith('/create') && (
-        <Link to="/create" className={cn(buttonVariants({ size: 'sm' }), 'rounded-full')}>
-          <SquarePen /> New post
-        </Link>
-      )}
       <Notifications />
       <ProfileButton />
     </div>
@@ -185,28 +176,10 @@ function ProfileButton() {
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const tz = useTz()
-  const file = useRef<HTMLInputElement>(null)
   const canSignOut = auth.enabled || !!auth.demoEmail
 
   return (
     <>
-      <input
-        ref={file}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        className="hidden"
-        onChange={async (e) => {
-          const f = e.target.files?.[0]
-          e.target.value = ''
-          if (!f) return
-          try {
-            await saveProfilePhoto(f)
-            toast.success('Photo updated')
-          } catch (err) {
-            toast.error((err as Error).message)
-          }
-        }}
-      />
       <DropdownMenu>
         <DropdownMenuTrigger aria-label="Your profile" className="flex items-center gap-1 rounded-full p-0.5 transition-opacity hover:opacity-90">
           <UserAvatar className="size-9 ring-2 ring-card" />
@@ -228,14 +201,6 @@ function ProfileButton() {
           <DropdownMenuItem onClick={() => navigate('/profile')}>
             <UserRound /> Profile
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => file.current?.click()}>
-            <Camera /> {me.photo ? 'Change photo' : 'Add a photo'}
-          </DropdownMenuItem>
-          {me.photo && (
-            <DropdownMenuItem onClick={removeProfilePhoto}>
-              <Trash2 /> Remove photo
-            </DropdownMenuItem>
-          )}
           {auth.can('approver') && (
             <DropdownMenuItem onClick={() => navigate('/linkedin')}>
               <Link2 /> LinkedIn connections
