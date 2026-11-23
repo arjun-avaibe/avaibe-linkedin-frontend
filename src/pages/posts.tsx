@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ExternalLink, Plus, Search } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ExternalLink, GitCompareArrows, Plus, Search } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, PageHeader, PostRef, SimpleSelect } from '@/components/common'
@@ -104,6 +104,10 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
   const range = outerRange ?? ownRange
   const [sort, setSort] = useState<{ key: SortKey; desc: boolean }>(DEFAULT_SORT)
   const [pageSize, setPageSize] = useState('10')
+  // Posts ticked for Compare (2 to 4)
+  const [picked, setPicked] = useState<number[]>([])
+  const navigate = useNavigate()
+  const togglePick = (id: number) => setPicked((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length < 4 ? [...cur, id] : cur))
   const [page, setPage] = useState(0)
 
   // One account at a time (switch accounts at the top left)
@@ -217,7 +221,12 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
                     className="sticky left-0 z-10 w-[340px] min-w-[300px] bg-card px-4 py-3 font-medium shadow-[1px_0_0_var(--border)]"
                     aria-sort={sort.key === 'date' ? (sort.desc ? 'descending' : 'ascending') : 'none'}
                   >
-                    <SortButton label="Post" k="date" sort={sort} onSort={toggleSort} />
+                    <div className="flex items-center gap-3">
+                      <span className="flex w-4 shrink-0 justify-center text-muted-foreground" title="Tick posts to compare them">
+                        <GitCompareArrows className="size-3.5" />
+                      </span>
+                      <SortButton label="Post" k="date" sort={sort} onSort={toggleSort} />
+                    </div>
                   </th>
                   <th className="px-3 py-3 font-medium">Type</th>
                   <th className="px-3 py-3 font-medium">Audience</th>
@@ -243,6 +252,17 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
                   return (
                     <tr key={p.id} className="group border-b last:border-0 hover:bg-muted/40">
                       <td className="sticky left-0 z-10 w-[340px] max-w-[340px] min-w-[300px] bg-card px-4 py-3 align-top shadow-[1px_0_0_var(--border)] group-hover:bg-muted">
+                        <div className="flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          aria-label={`Compare ${postTitle(p)}`}
+                          title={picked.includes(p.id) ? 'Remove from comparison' : picked.length >= 4 ? 'Up to 4 posts can be compared' : 'Add to comparison'}
+                          checked={picked.includes(p.id)}
+                          disabled={!picked.includes(p.id) && picked.length >= 4}
+                          onChange={() => togglePick(p.id)}
+                          className="mt-1 size-4 shrink-0 cursor-pointer rounded accent-[var(--primary)] disabled:cursor-not-allowed disabled:opacity-40"
+                        />
+                        <div className="min-w-0">
                         <Link to={`/posts/${p.id}`} className="line-clamp-2 font-medium text-foreground transition-colors hover:text-primary">
                           {postTitle(p)}
                         </Link>
@@ -256,6 +276,8 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
                               <ExternalLink className="size-3" />
                             </a>
                           )}
+                        </div>
+                        </div>
                         </div>
                       </td>
                       <td className={cn('px-3 py-3 align-top text-xs', p.format === 'untagged' && 'text-warn-fg')}>{FORMAT_LABELS[p.format]}</td>
@@ -292,6 +314,28 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
               </tbody>
             </table>
           </div>
+
+          {/* Compare: a bar that floats at the bottom of the screen while posts are ticked */}
+          {picked.length > 0 && (
+            <div
+              role="region"
+              aria-label="Compare selected posts"
+              className="fixed inset-x-0 bottom-6 z-40 mx-auto flex w-fit max-w-[calc(100vw-2rem)] flex-wrap items-center gap-3 rounded-full bg-foreground py-2 pr-2 pl-5 text-sm text-background shadow-xl"
+            >
+              <span className="font-medium">
+                {picked.length} selected
+                <span className="ml-1.5 font-normal opacity-70">{picked.length < 2 ? '· pick at least one more' : picked.length >= 4 ? '· maximum reached' : '· up to 4'}</span>
+              </span>
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={() => setPicked([])} className="text-background hover:bg-background/15 hover:text-background">
+                  Clear
+                </Button>
+                <Button size="sm" disabled={picked.length < 2} onClick={() => navigate(`/compare?ids=${picked.join(',')}`)}>
+                  <GitCompareArrows /> Compare
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Pagination, like LinkedIn's "Show 10" */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-2.5 text-xs text-muted-foreground">

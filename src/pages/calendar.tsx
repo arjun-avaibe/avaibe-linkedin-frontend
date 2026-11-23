@@ -12,7 +12,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns'
-import { CalendarClock, ChevronLeft, ChevronRight, CircleAlert, Clock, Pencil, Plus, X } from 'lucide-react'
+import { CalendarClock, ChevronLeft, ChevronRight, Clock, Pencil, Plus, X } from 'lucide-react'
 import { PageHeader, PostRef } from '@/components/common'
 import { todayUae, ymd } from '@/components/period'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -23,7 +23,8 @@ import { api, type CalendarData, type CalendarItem, type CalendarKind, type Cale
 import { FORMAT_LABELS, fmtNumber } from '@/lib/format'
 import { PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
-import { dayAdvice, proven, SLOT_START, UAE_WEEKEND } from '@/lib/timing-advice'
+import { proven, SLOT_START, UAE_WEEKEND } from '@/lib/timing-advice'
+import { DayIdeas } from '@/components/day-ideas'
 
 /* ------------------------------------------------------------------ layers */
 
@@ -231,7 +232,6 @@ export function CalendarPage() {
               day={selected}
               data={data}
               accountId={account.id}
-              isPast={selected < today}
               canPlan={auth.can('editor') && selected >= today}
               onClose={() => setSelected(null)}
             />
@@ -432,14 +432,12 @@ function DayPanel({
   day,
   data,
   accountId,
-  isPast,
   canPlan,
   onClose,
 }: {
   day: string
   data: CalendarData
   accountId: number
-  isPast: boolean
   canPlan: boolean
   onClose: () => void
 }) {
@@ -447,13 +445,13 @@ function DayPanel({
   const items = data.items.filter((i) => covers(i, day))
   const posts = data.posts.filter((p) => p.date === day)
   const planned = data.planned.filter((p) => p.date === day)
-  const advice = dayAdvice(day, items, data, isPast)
   const adv = data.timing.ready ? data.timing.days[day] : undefined
   // A proven best slot if there is one; otherwise the slot that's slightly ahead so far
   const start = (adv && SLOT_START[adv.best_slot]) || '10:00'
   const newAt = new Date(`${day}T${start}:00+04:00`).toISOString()
 
   return (
+    <>
     <div className="rounded-2xl border bg-card p-5 text-sm shadow-sm">
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -486,22 +484,6 @@ function DayPanel({
             </li>
           ))}
         </ul>
-      )}
-
-      {advice.length > 0 && (
-        <div className="mt-3 space-y-2 border-t pt-3">
-          <div className="text-xs font-medium text-muted-foreground">{isPast ? 'About this day' : 'If you post this day'}</div>
-          {advice.map((a, n) => (
-            <p key={n} className="flex gap-2 text-[13px] leading-snug">
-              {a.tone === 'good' ? (
-                <Clock className="mt-0.5 size-3.5 shrink-0 text-primary" />
-              ) : (
-                <CircleAlert className={cn('mt-0.5 size-3.5 shrink-0', a.tone === 'quiet' ? 'text-warn-fg' : 'text-muted-foreground')} />
-              )}
-              <span>{a.text}</span>
-            </p>
-          ))}
-        </div>
       )}
 
       <div className="mt-3 space-y-2 border-t pt-3">
@@ -551,5 +533,8 @@ function DayPanel({
         </Link>
       )}
     </div>
+    {/* Ideas for a post on this day: only for today and later */}
+    {canPlan && <DayIdeas day={day} items={data.items} posts={data.posts} accountId={accountId} newAt={newAt} />}
+    </>
   )
 }

@@ -11,7 +11,6 @@ import {
   Link2,
   ListChecks,
   Pencil,
-  Plus,
   Send,
   Trash2,
   Undo2,
@@ -50,6 +49,20 @@ const STATUS: Record<PlannedStatus, { label: string; cls: string }> = {
   missed: { label: 'Missed', cls: 'bg-serious/15 text-serious-fg border-serious/40' },
 }
 
+/** The queue is shown in sections, so scheduled and unpublished posts never mix */
+const GROUPS: { value: string; label: string; test: (p: PlannedPost) => boolean }[] = [
+  { value: 'unpublished', label: 'Unpublished', test: (p) => p.status === 'draft' || dueByHand(p) },
+  { value: 'scheduled', label: 'Scheduled', test: (p) => (p.status === 'approved' && !dueByHand(p)) || p.status === 'publishing' },
+  { value: 'problem', label: 'Failed or missed', test: (p) => p.status === 'failed' || p.status === 'missed' },
+  { value: 'published', label: 'Published', test: (p) => p.status === 'published' },
+]
+
+/** Soonest first; published ones newest first */
+function sortForGroup(list: PlannedPost[], group: string): PlannedPost[] {
+  const t = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : Infinity)
+  return [...list].sort((a, b) => (group === 'published' ? t(b.published_at) - t(a.published_at) : t(a.scheduled_at) - t(b.scheduled_at)))
+}
+
 /** Status filter: "Needs action" matches the red dot (unpublished drafts, hand posts to mark, failures) */
 const STATUS_FILTERS: { value: string; label: string; test: (p: PlannedPost) => boolean }[] = [
   { value: 'all', label: 'All', test: () => true },
@@ -63,7 +76,6 @@ const STATUS_FILTERS: { value: string; label: string; test: (p: PlannedPost) => 
 
 export function PublishingPage() {
   const { account } = useAccount()
-  const auth = useAuth()
   const { data: connections = [] } = useLinkedInConnections()
   const { data: planned, isLoading } = usePlanned(account?.id)
   const connection = connections.find((c) => c.account_id === account?.id)
@@ -93,13 +105,6 @@ export function PublishingPage() {
       <PageHeader eyebrow="Content"
         title="Publishing"
         description="Preview a post, then publish it now or at its scheduled time. Text and image posts are published by the app; carousel, video, article and poll posts are posted on LinkedIn by hand, then marked as posted."
-        actions={
-          auth.can('editor') ? (
-            <Button size="sm" onClick={() => navigate(tab === 'all' ? '/create' : `/create?format=${tab}`)}>
-              <Plus /> New {tab === 'all' ? 'post' : `${PLANNED_FORMAT_LABELS[tab].toLowerCase()} post`}
-            </Button>
-          ) : undefined
-        }
       />
 
       {/* One quiet row of filters (was a tab per format) */}
@@ -178,13 +183,27 @@ export function PublishingPage() {
         <EmptyState>
           {all.length && (tab !== 'all' || status !== 'all')
             ? 'No posts match these filters.'
-            : 'No posts in the queue. Click “New post” to draft one.'}
+            : 'No posts in the queue. Drafts made in Create post appear here.'}
         </EmptyState>
       ) : (
-        <div className="space-y-3">
-          {shown.map((p) => (
-            <PlannedCard key={p.id} p={p} accountId={account.id} accountName={account.name} connection={connection} showFormat={tab === 'all'} onEdit={() => navigate(`/create/${p.id}`)} />
-          ))}
+        <div className="space-y-6">
+          {GROUPS.map((g) => {
+            const items = sortForGroup(shown.filter(g.test), g.value)
+            if (!items.length) return null
+            return (
+              <section key={g.value} aria-label={g.label}>
+                <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                  {g.label}
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">{items.length}</span>
+                </h2>
+                <div className="space-y-3">
+                  {items.map((p) => (
+                    <PlannedCard key={p.id} p={p} accountId={account.id} accountName={account.name} connection={connection} showFormat={tab === 'all'} onEdit={() => navigate(`/create/${p.id}`)} />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
         </div>
       )}
 
@@ -297,8 +316,8 @@ function PlannedCard({
 
   return (
     <div className="rounded-[1.8rem] bg-card p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-sm">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm">
           <PostRef id={p.ref} />
           {showFormat && <Badge variant="outline">{PLANNED_FORMAT_LABELS[p.format]}</Badge>}
           <Badge variant="outline" className={badge.cls}>
@@ -318,7 +337,7 @@ function PlannedCard({
           {p.goal && <Badge variant="secondary">{POST_GOALS.find((g) => g.value === p.goal)?.label}</Badge>}
           {p.topic && <Badge variant="secondary">{p.topic}</Badge>}
         </div>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex shrink-0 flex-wrap gap-1.5 sm:max-w-[55%] sm:justify-end">
           {editable && auth.can('editor') && (
             <Button size="sm" variant="outline" onClick={onEdit}>
               <Pencil /> Edit

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AudienceEditor, parseNum, toEditorRows, type EditorRow } from '@/components/audience-editor'
 import { EmptyState, PageHeader, PostRef, Section, ShareSummary } from '@/components/common'
 import { PostForm } from '@/components/post-form'
+import { CompareWithPost } from '@/components/compare-with-post'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
 import { useDeletePost, useDeleteSnapshot, usePost, useSaveAudience, useSaveSnapshot, useSavePost } from '@/hooks/queries'
@@ -74,6 +75,7 @@ function PostDetail({ post }: { post: Post }) {
         }
         actions={
           <>
+            <CompareWithPost post={post} />
             {post.post_url && (
               <a href={post.post_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm underline">
                 Open on LinkedIn <ExternalLink className="size-3.5" />

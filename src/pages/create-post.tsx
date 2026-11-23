@@ -151,7 +151,7 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
   // Required: what the post aims for. Older drafts have none until someone picks one.
   const [goal, setGoal] = useState<PostGoal | null>(initial?.goal ?? null)
   const [goalMissing, setGoalMissing] = useState(false)
-  const [topic, setTopic] = useState(initial?.topic ?? '')
+  const [topic, setTopic] = useState(initial?.topic ?? params.get('topic')?.slice(0, 200) ?? '') // a Calendar idea can pass its topic
   const [industry, setIndustry] = useState(initial?.industry ?? '')
   const [cta, setCta] = useState(initial?.cta ?? '')
   const [imageAlt, setImageAlt] = useState(initial?.image_alt ?? '')

@@ -118,7 +118,7 @@ export function AppSidebar() {
     to === '/'
       ? pathname === '/'
       : to === '/data'
-        ? pathname.startsWith('/data') || pathname.startsWith('/import') || pathname.startsWith('/posts') // Import and Posts live inside Data now
+        ? pathname.startsWith('/data') || pathname.startsWith('/import') || pathname.startsWith('/posts') || pathname.startsWith('/compare') // Import and Posts live inside Data now
         : to === '/create'
           ? pathname === '/create' && !fromCalendar // Edit post (/create/<id>) is opened from Publishing, so Publishing stays lit
           : to === '/publishing'

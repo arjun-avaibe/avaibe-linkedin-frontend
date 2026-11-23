@@ -10,6 +10,8 @@ import { LinkedInPage } from '@/pages/linkedin'
 import { NewPostPage } from '@/pages/post-new'
 import { PostDetailPage } from '@/pages/post-detail'
 import { ProfilePage } from '@/pages/profile'
+import { ComparePostsPage } from '@/pages/compare-posts'
+import { ComparePeriodsPage } from '@/pages/compare-periods'
 import { CreatePostPage } from '@/pages/create-post'
 import { PublishingPage } from '@/pages/publishing'
 import { SettingsPage } from '@/pages/settings'
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="posts" element={<Navigate to="/data?tab=posts" replace />} />
           <Route path="posts/new" element={<NewPostPage />} />
           <Route path="posts/:id" element={<PostDetailPage />} />
+          <Route path="compare" element={<ComparePostsPage />} />
+          <Route path="compare/periods" element={<ComparePeriodsPage />} />
           <Route path="import" element={<ImportPage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="create" element={<CreatePostPage />} />

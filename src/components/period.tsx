@@ -1,6 +1,6 @@
 /** Period totals from the daily page data, compared with the previous period: shared by the Dashboard and Data page. */
 import { useMemo } from 'react'
-import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { addDays, addYears, differenceInCalendarDays, format, parseISO, subYears } from 'date-fns'
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -45,29 +45,67 @@ export interface PeriodStats {
   curDays: PageDay[]
   lastData: string
   partial: boolean
+  /** The dates compared with (null when there's nothing to compare) */
+  prevWin: { from: string; to: string } | null
+  /** Custom comparison of a different length: its totals were scaled to this period's number of days */
+  prevScaled: boolean
 }
 
-/** This period's totals and the previous period's (same days only, so unreported days don't count against it) */
-export function usePeriod(daily: PageDay[], range: TimeRange) {
+/** What a period is compared with: the days just before (default), the same days a year earlier, or chosen dates */
+export interface Comparison {
+  mode: 'prev' | 'year' | 'custom'
+  from?: string
+  to?: string
+}
+
+/** This period's totals and the comparison period's. "Previous" and "last year" use the same days only, so days
+    LinkedIn hasn't reported don't count against either side; a custom period of another length is scaled. */
+export function usePeriod(daily: PageDay[], range: TimeRange, cmp: Comparison = { mode: 'prev' }) {
   const win = windowOf(range, daily)
   const stats = useMemo<PeriodStats | null>(() => {
     if (!win || !daily.length) return null
     const len = differenceInCalendarDays(parseISO(win.to), parseISO(win.from)) + 1
     const cur = daily.filter((d) => d.date >= win.from && d.date <= win.to)
     const curDates = new Set(cur.map((d) => d.date))
-    const prevDays = daily.filter((d) => curDates.has(ymd(addDays(parseISO(d.date), len))))
     const lastData = daily[daily.length - 1].date
-    return {
-      len,
-      cur: totals(cur),
-      // Only compare when the previous period is (almost) fully covered by data
-      prev: range.preset !== 'all' && cur.length && prevDays.length >= cur.length * 0.8 ? totals(prevDays) : null,
-      curDays: cur,
-      lastData,
-      partial: lastData < win.to,
+    let prev: Totals | null = null
+    let prevWin: PeriodStats['prevWin'] = null
+    let prevScaled = false
+    if (cmp.mode === 'custom' && cmp.from && cmp.to) {
+      const days = daily.filter((d) => d.date >= cmp.from! && d.date <= cmp.to!)
+      prevWin = { from: cmp.from, to: cmp.to }
+      if (days.length && cur.length) {
+        prev = totals(days)
+        if (days.length !== cur.length) {
+          // Different lengths: compare like for like by scaling the other period to this one's number of days
+          const k = cur.length / days.length
+          for (const key of Object.keys(prev) as (keyof Totals)[]) if (key !== 'days' && prev[key] != null) prev[key] = Math.round((prev[key] as number) * k)
+          prev.days = cur.length
+          prevScaled = true
+        }
+      }
+    } else if (range.preset !== 'all') {
+      const shift = (d: string) => (cmp.mode === 'year' ? ymd(addYears(parseISO(d), 1)) : ymd(addDays(parseISO(d), len)))
+      const prevDays = daily.filter((d) => curDates.has(shift(d.date)))
+      prevWin =
+        cmp.mode === 'year'
+          ? { from: ymd(subYears(parseISO(win.from), 1)), to: ymd(subYears(parseISO(win.to), 1)) }
+          : { from: ymd(addDays(parseISO(win.from), -len)), to: ymd(addDays(parseISO(win.from), -1)) }
+      // Only compare when the other period is (almost) fully covered by data
+      if (cur.length && prevDays.length >= cur.length * 0.8) prev = totals(prevDays)
     }
-  }, [daily, win?.from, win?.to, range.preset]) // eslint-disable-line react-hooks/exhaustive-deps
+    return { len, cur: totals(cur), prev, curDays: cur, lastData, partial: lastData < win.to, prevWin, prevScaled }
+  }, [daily, win?.from, win?.to, range.preset, cmp.mode, cmp.from, cmp.to]) // eslint-disable-line react-hooks/exhaustive-deps
   return { win, stats }
+}
+
+/** "vs previous 30 days" / "vs same period last year" / "vs 1 Mar – 30 Mar 2026" */
+export function comparisonLabel(stats: PeriodStats | null, cmp: Comparison): string {
+  if (!stats) return ''
+  if (cmp.mode === 'year') return 'vs same period last year'
+  if (cmp.mode === 'custom' && stats.prevWin)
+    return `vs ${format(parseISO(stats.prevWin.from), 'd MMM')} – ${format(parseISO(stats.prevWin.to), 'd MMM yyyy')}`
+  return `vs previous ${stats.len} days`
 }
 
 /** The account's daily page data, sorted by date */

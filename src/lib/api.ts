@@ -409,6 +409,8 @@ export interface PostSummary {
   hashtags: string[]
   caption: string | null
   notes: string | null
+  /** What the post aimed for, when it was planned in the app */
+  goal?: PostGoal | null
 }
 
 export const DIMENSIONS = ['location', 'industry', 'seniority', 'job_title', 'job_function', 'company_size', 'company'] as const
@@ -699,6 +701,14 @@ export interface ExportFileResult {
   demographic_rows?: number
   demographic_total?: number
   demographic_status?: 'new' | 'changed' | 'unchanged'
+}
+
+/** Compare posts → Ask AI why: Claude's reading of the difference */
+export interface CompareExplanation {
+  summary: string
+  reasons: { reason: string; confidence: 'high' | 'medium' | 'low' }[]
+  try_next: string[]
+  caveats: string[]
 }
 
 /** Analyse → a prompt for an outside image/video tool (Seedance, Seedream…) */
@@ -1067,6 +1077,9 @@ export const api = {
     if (confirmProfile) form.append('confirm_profile', '1')
     return request<ExportImportResult>('POST', '/import/linkedin-export', { params: { account_id: accountId }, form })
   },
+  /** Compare posts → Ask AI why */
+  comparePosts: (body: { account_id: number; post_ids: number[]; checkpoint: Checkpoint }) =>
+    request<Omit<PostAssistRun, 'result'> & { result: CompareExplanation }>('POST', '/ai/compare-posts', { body }),
   postAssistStatus: (accountId: number) =>
     request<{ configured: boolean; runs_today: number; daily_limit: number }>('GET', '/ai/post-assist', { params: { account_id: accountId } }),
   postAssist: (
