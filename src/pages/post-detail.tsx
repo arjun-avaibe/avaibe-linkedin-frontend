@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AudienceEditor, parseNum, toEditorRows, type EditorRow } from '@/components/audience-editor'
-import { EmptyState, PageHeader, Section, ShareSummary } from '@/components/common'
+import { EmptyState, PageHeader, PostRef, Section, ShareSummary } from '@/components/common'
 import { PostForm } from '@/components/post-form'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
@@ -54,9 +54,11 @@ function PostDetail({ post }: { post: Post }) {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader eyebrow="Data"
-        title={post.topic ?? `Post #${post.id}`}
+        back="/data?tab=posts"
+        title={post.topic ?? post.ref ?? `Post ${post.id}`}
         description={
           <>
+            {post.ref && <PostRef id={post.ref} className="mr-1.5 align-middle" />}
             {FORMAT_LABELS[post.format]} ·{' '}
             {post.time_known ? (
               <>

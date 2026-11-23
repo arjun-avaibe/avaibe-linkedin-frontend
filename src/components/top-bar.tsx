@@ -23,7 +23,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ACCENTS, useTheme, type Accent, type Theme } from '@/context/theme'
+import { useTheme, type Theme } from '@/context/theme'
 import { useTz, ZONES, type ZoneId } from '@/context/timezone'
 import { UserAvatar } from '@/components/user-avatar'
 import { todayUae, ymd } from '@/components/period'
@@ -32,6 +32,7 @@ import { useAuth } from '@/context/auth'
 import { usePlanned } from '@/hooks/queries'
 import { api } from '@/lib/api'
 import { removeProfilePhoto, saveProfilePhoto, useMe } from '@/lib/me'
+import { dueByHand } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 
 export function TopBar() {
@@ -94,9 +95,9 @@ function useNotes(): Note[] {
     }
     const drafts = planned.filter((p) => p.status === 'draft').length
     if (drafts) {
-      notes.push({ key: `drafts:${drafts}`, tone: 'todo', icon: Hourglass, text: `${plural(drafts, 'draft', 'drafts')} waiting for approval`, to: '/publishing?status=draft' })
+      notes.push({ key: `drafts:${drafts}`, tone: 'todo', icon: Hourglass, text: `${plural(drafts, 'post', 'posts')} waiting to be published`, to: '/publishing?status=draft' })
     }
-    const toMark = planned.filter((p) => p.status === 'approved' && p.manual).length
+    const toMark = planned.filter(dueByHand).length
     if (toMark) {
       notes.push({
         key: `mark:${toMark}`,
@@ -192,7 +193,7 @@ function ProfileButton() {
   const me = useMe()
   const auth = useAuth()
   const navigate = useNavigate()
-  const { theme, setTheme, accent, setAccent } = useTheme()
+  const { theme, setTheme } = useTheme()
   const tz = useTz()
   const file = useRef<HTMLInputElement>(null)
   const canSignOut = auth.enabled || !!auth.demoEmail
@@ -262,17 +263,6 @@ function ProfileButton() {
                   {THEME_OPTIONS.map((t) => (
                     <DropdownMenuRadioItem key={t.value} value={t.value}>
                       <t.icon /> {t.label}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Accent colour</DropdownMenuLabel>
-                <DropdownMenuRadioGroup value={accent} onValueChange={(v) => setAccent(v as Accent)}>
-                  {ACCENTS.map((a) => (
-                    <DropdownMenuRadioItem key={a.value} value={a.value} closeOnClick={false}>
-                      <span className="size-3.5 rounded-full" style={{ background: a.swatch }} aria-hidden /> {a.label}
                     </DropdownMenuRadioItem>
                   ))}
                 </DropdownMenuRadioGroup>

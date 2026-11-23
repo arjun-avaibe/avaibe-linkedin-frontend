@@ -11,8 +11,8 @@ const SECTIONS: { title: string; items: [string, string][] }[] = [
     items: [
       ['Dashboard', 'A quick read of the period: headline numbers, best posts, who your audience is and what needs doing.'],
       ['Data', 'The detail: every post (Posts), page totals and the chart (Content), page visitors and followers. Import LinkedIn’s export from the Posts tab.'],
-      ['Create post', 'Write, check and schedule a post. The AI (Analyse, Chat, Generate) only runs when you click.'],
-      ['Calendar · Publishing', 'Calendar: posts, holidays and events by day. Publishing: the queue of planned posts to approve, publish or mark as posted.'],
+      ['Create post', 'Write, check and schedule a post. The AI (Analyse, Chat) only runs when you click. Tick what Analyse should check; for image, video and carousel posts it can also write the prompt to paste into an outside tool such as Seedream or Seedance, then you upload the result.'],
+      ['Calendar · Publishing', 'Calendar: posts, holidays and events by day. Publishing: posts are unpublished, scheduled or published. Approve opens a preview where you publish now or at the post’s time; hand-posted formats are marked as posted.'],
       ['Brand · Leads · Sales', 'Suggestions for each, plus Competitors, the Leads log and the Pipeline. Leads are entered by the team: LinkedIn doesn’t share enquiries.'],
     ],
   },
@@ -27,8 +27,8 @@ const SECTIONS: { title: string; items: [string, string][] }[] = [
   {
     title: 'The AI',
     items: [
-      ['When it runs', 'Only when someone clicks Analyse, Start session, sends a chat message, or Generate. Opening a page never uses it.'],
-      ['Limits', 'Per account, per 24 hours: 40 analyses, 80 chat messages, 40 generated images. Each run’s cost is shown and recorded.'],
+      ['When it runs', 'Only when someone clicks Analyse, Start session, or sends a chat message. Opening a page never uses it.'],
+      ['Limits', 'Per account, per 24 hours: 40 analyses, 80 chat messages. Each run’s cost is shown and recorded.'],
       ['What it won’t do', 'Invent numbers, client names or results. It asks instead, and flags claims to check. Always proofread before posting.'],
     ],
   },

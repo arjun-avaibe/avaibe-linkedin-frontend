@@ -89,7 +89,7 @@ function useFoldingSection(prefix: string) {
 const KIND_LABEL: Record<string, string> = { company: 'Company page', founder: 'Founder profile', personal: 'Personal profile' }
 
 export function AppSidebar() {
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const { account } = useAccount()
   const { counts } = useSuggestionItems(account?.id)
   const { data: planned = [] } = usePlanned(account?.id)
@@ -113,12 +113,19 @@ export function AppSidebar() {
     } else setManualOpen(!suggestionsOpen)
   }
 
+  const fromCalendar = new URLSearchParams(search).get('from') === 'calendar'
   const isActive = (to: string) =>
     to === '/'
       ? pathname === '/'
       : to === '/data'
         ? pathname.startsWith('/data') || pathname.startsWith('/import') || pathname.startsWith('/posts') // Import and Posts live inside Data now
-        : pathname.startsWith(to)
+        : to === '/create'
+          ? pathname === '/create' && !fromCalendar // Edit post (/create/<id>) is opened from Publishing, so Publishing stays lit
+          : to === '/publishing'
+            ? pathname.startsWith('/publishing') || (pathname.startsWith('/create/') && !fromCalendar)
+            : to === '/calendar'
+              ? pathname.startsWith('/calendar') || (pathname.startsWith('/create') && fromCalendar) // opened from a calendar day
+              : pathname.startsWith(to)
 
   const renderItems = (items: NavItem[]) =>
     items

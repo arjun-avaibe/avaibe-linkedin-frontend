@@ -60,7 +60,7 @@ export function Highlights({ items, dates, compareLabel, summary }: { items: Hig
             const Icon = c.dir === 'up' ? ArrowUpRight : c.dir === 'down' ? ArrowDownRight : c.dir === 'flat' ? ArrowRight : null
             return (
               <div key={h.label}>
-                <dd className="text-2xl font-semibold tracking-tight tabular-nums">{h.value == null ? '—' : h.pct ? fmtPct(h.value) : fmtNumber(h.value)}</dd>
+                <dd className="text-[30px] leading-none font-medium tracking-tight tabular-nums">{h.value == null ? '—' : h.pct ? fmtPct(h.value) : fmtNumber(h.value)}</dd>
                 <dt className="mt-0.5 text-sm text-muted-foreground">{h.label}</dt>
                 <div
                   className={cn(
@@ -96,7 +96,7 @@ const MARKER_COLOR: Record<string, string> = { uae_holiday: 'var(--cal-uae)', pe
 const chartConfig = { value: { label: 'Value', color: 'var(--chart-current)' } } satisfies ChartConfig
 
 const postDate = (p: Post) => p.published_at_uae.slice(0, 10)
-const postTitle = (p: Post) => p.caption?.split('\n').find((l) => l.trim())?.trim() || p.topic || `Post #${p.id}`
+const postTitle = (p: Post) => p.caption?.split('\n').find((l) => l.trim())?.trim() || p.topic || p.ref || `Post ${p.id}`
 const postImpressions = (p: Post) => p.snapshots[p.snapshots.length - 1]?.impressions ?? null
 
 function useCalendarItems(from: string, to: string) {

@@ -13,20 +13,22 @@ import {
   BarChart3,
   CalendarClock,
   ChevronRight,
+  Clock,
   Copy,
   ExternalLink,
   Eye,
   FileText,
   Globe,
+  Handshake,
   Hash,
   Image as ImageIcon,
   ImagePlus,
+  Inbox,
   Layers,
-  Lightbulb,
-  LineChart,
+  Megaphone,
   MessagesSquare,
-  Paperclip,
   MousePointerClick,
+  Paperclip,
   PenSquare,
   PlayCircle,
   RotateCcw,
@@ -42,7 +44,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
-import { SimpleSelect } from '@/components/common'
+import { SimpleSelect, BackButton, PostRef } from '@/components/common'
 import { PostingTimeHint } from '@/components/posting-time-hint'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
@@ -57,16 +59,25 @@ import {
   type PlannedPostInput,
   type ChatTurn,
   type PostAssistResult,
+  type AnalysePart,
+  type PostGoal,
+  POST_GOALS,
 } from '@/lib/api'
 import { PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 import { fetchAsFile, prepareForAI } from '@/lib/attachment'
-import { CarouselGenerator, ImageGenerator } from '@/components/image-gen'
+import { SlidePromptsView, VisualPromptView } from '@/components/media-prompt'
 
 const MAX_CHARS = 3000
-const MAX_INSTRUCTIONS = 500
 
 export const DURATION_LABELS: Record<NonNullable<PlannedDetails['duration']>, string> = { '1d': '1 day', '3d': '3 days', '1w': '1 week', '2w': '2 weeks' }
+
+const GOAL_ICON: Record<PostGoal, typeof Type> = {
+  brand: Megaphone,
+  leads: Inbox,
+  sales: Handshake,
+  engagement: MessagesSquare,
+}
 
 const FORMAT_ICON: Record<PlannedFormat, typeof Type> = {
   text: Type,
@@ -130,8 +141,6 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
   const [media, setMedia] = useState<File | null>(null)
   const manual = format !== 'text' && format !== 'image'
   // Generate with AI: the image prompt (Analyse can fill it) and, for carousels, generate vs upload
-  const [genPrompt, setGenPrompt] = useState('')
-  const [carouselSource, setCarouselSource] = useState<'generate' | 'upload'>(initial?.has_media ? 'upload' : 'generate')
 
   const [caption, setCaption] = useState(initial?.caption ?? '')
   // From the Calendar: ?new_at=<ISO time> pre-fills the date and time
@@ -139,6 +148,9 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
   const startAt = initial?.scheduled_at ?? (newAt && !Number.isNaN(Date.parse(newAt)) ? newAt : null)
   const [scheduled, setScheduled] = useState(startAt ? isoToZonedInput(startAt, zone) : '')
   const [visibility, setVisibility] = useState<'PUBLIC' | 'CONNECTIONS'>(initial?.visibility ?? 'PUBLIC')
+  // Required: what the post aims for. Older drafts have none until someone picks one.
+  const [goal, setGoal] = useState<PostGoal | null>(initial?.goal ?? null)
+  const [goalMissing, setGoalMissing] = useState(false)
   const [topic, setTopic] = useState(initial?.topic ?? '')
   const [industry, setIndustry] = useState(initial?.industry ?? '')
   const [cta, setCta] = useState(initial?.cta ?? '')
@@ -153,6 +165,11 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
   const over = caption.length > MAX_CHARS
 
   const save = async (mode: 'draft' | 'schedule') => {
+    if (!goal) {
+      setGoalMissing(true)
+      document.getElementById('goal')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return toast.error('Choose the goal of the post')
+    }
     if (!caption.trim()) return toast.error('Write the post text first')
     if (over) return toast.error(`LinkedIn allows ${MAX_CHARS.toLocaleString()} characters`)
     const options = (details.options ?? []).map((o) => o.trim()).filter(Boolean)
@@ -166,6 +183,7 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
       image_alt: imageAlt.trim() || null,
       visibility,
       scheduled_at: scheduled ? zonedInputToIso(scheduled, zone) : null,
+      goal,
       topic: topic.trim() || null,
       industry: industry.trim() || null,
       cta: cta.trim() || null,
@@ -180,14 +198,16 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
       if ((format === 'carousel' || format === 'video') && media) await api.uploadPlannedMedia(saved.id, media)
       if (mode === 'schedule' && canApprove) {
         await api.plannedAction(saved.id, 'approve')
-        toast.success(manual ? 'Approved and planned. Post it on LinkedIn by hand at that time.' : 'Scheduled')
+        toast.success(
+          manual ? 'Planned. Post it on LinkedIn by hand at that time, then mark it as posted.' : 'Scheduled: the app will publish it at that time.',
+        )
       } else if (mode === 'schedule') {
-        toast.success('Saved and sent for approval. It will be scheduled once an approver approves it.')
+        toast.success('Saved and sent to an approver. It will be scheduled once they publish it.')
       } else {
-        toast.success(initial ? 'Saved as a draft. It needs approval again before it can be published.' : 'Draft saved')
+        toast.success(initial?.status === 'approved' ? 'Saved as unpublished: it is no longer scheduled until it is published again.' : 'Draft saved')
       }
       refresh.mutate(undefined)
-      navigate('/publishing')
+      navigate(params.get('from') === 'calendar' ? '/calendar' : '/publishing')
     } catch (e) {
       toast.error((e as Error).message)
       refresh.mutate(undefined)
@@ -200,20 +220,28 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
     <div className="mx-auto max-w-[1400px]">
       {/* Breadcrumb and title */}
       <nav className="mb-1 flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
+        {(initial || params.get('from') === 'calendar') && <BackButton fallback={params.get('from') === 'calendar' ? '/calendar' : '/publishing'} />}
         <Link to="/publishing" className="hover:text-foreground">
-          Content
+          {initial ? 'Publishing' : 'Content'}
         </Link>
         <ChevronRight className="size-3.5" />
         <span className="text-foreground">{initial ? 'Edit post' : 'Create post'}</span>
+        {initial?.ref && <PostRef id={initial.ref} className="ml-1" />}
       </nav>
-      <h1 className="text-[28px] leading-tight font-bold tracking-tight">{initial ? 'Edit post' : 'Create post'}</h1>
+      <h1 className="text-[32px] leading-tight font-semibold tracking-tight">{initial ? 'Edit post' : 'Create post'}</h1>
       <p className="mt-1 mb-6 text-sm text-muted-foreground">
         Write, check and schedule a LinkedIn post for {accountName}. AI suggestions run only when you click Analyse.
       </p>
+      {initial?.status === 'approved' && (
+        <p className="-mt-3 mb-5 rounded-xl bg-warn/10 px-3 py-2 text-xs ring-1 ring-warn/40">
+          This post is scheduled. Saving changes takes it off the schedule
+          {canApprove ? ' (Schedule post puts it back on)' : ' until an approver publishes it again'}; leaving without saving changes nothing.
+        </p>
+      )}
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
         {/* ---------------- left: the post */}
-        <section className="flex flex-col overflow-hidden rounded-2xl bg-card shadow-sm ring-1 ring-border">
+        <section className="flex flex-col overflow-hidden rounded-[1.8rem] bg-card">
           <header className="flex items-center gap-3 border-b px-6 py-4">
             <IconTile icon={PenSquare} />
             <h2 className="text-lg font-semibold">{initial ? 'Edit post' : 'New post'}</h2>
@@ -223,6 +251,45 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
           </header>
 
           <div className="space-y-5 px-6 py-5">
+            <div id="goal" className="scroll-mt-24">
+              <Label className="mb-2 block font-semibold">
+                Goal <span className="text-bad-fg">*</span>
+              </Label>
+              <div
+                role="radiogroup"
+                aria-label="Goal of the post"
+                className={cn('grid gap-2 sm:grid-cols-4', goalMissing && !goal && 'rounded-2xl ring-2 ring-bad/40 ring-offset-4 ring-offset-card')}
+              >
+                {POST_GOALS.map((g) => {
+                  const Icon = GOAL_ICON[g.value]
+                  const on = goal === g.value
+                  return (
+                    <button
+                      key={g.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      title={g.hint}
+                      onClick={() => {
+                        setGoal(g.value)
+                        setGoalMissing(false)
+                      }}
+                      className={cn(
+                        'flex items-center gap-2 rounded-2xl px-3 py-2.5 text-left text-[13px] font-medium ring-1 transition-colors',
+                        on ? 'bg-primary/10 text-foreground ring-primary' : 'bg-card ring-border hover:bg-muted',
+                      )}
+                    >
+                      <Icon className={cn('size-4 shrink-0', on ? 'text-primary' : 'text-muted-foreground')} />
+                      {g.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className={cn('mt-2 text-xs', goalMissing && !goal ? 'text-bad-fg' : 'text-muted-foreground')}>
+                {goal ? POST_GOALS.find((g) => g.value === goal)!.hint + '.' : 'Required. It shapes the AI’s suggestions and lets Data compare goals.'}
+              </p>
+            </div>
+
             <div>
               <Label className="mb-2 block font-semibold">Format</Label>
               <div className="flex flex-wrap gap-1.5">
@@ -279,33 +346,6 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
               setRemoveImage={setRemoveImage}
               imageAlt={imageAlt}
               setImageAlt={setImageAlt}
-              imageGen={
-                <ImageGenerator
-                  accountId={accountId}
-                  prompt={genPrompt}
-                  setPrompt={setGenPrompt}
-                  onUse={(f) => {
-                    setFile(f)
-                    setRemoveImage(false)
-                  }}
-                />
-              }
-              carousel={{
-                source: carouselSource,
-                setSource: setCarouselSource,
-                generator: (
-                  <CarouselGenerator
-                    accountId={accountId}
-                    draft={{ caption, topic, industry, cta }}
-                    title={details.document_title ?? ''}
-                    onTitle={(t) => setDetail('document_title', t)}
-                    onUse={(pdf) => {
-                      setMedia(pdf)
-                      setCarouselSource('upload') // shows the attached PDF; saving uploads it
-                    }}
-                  />
-                ),
-              }}
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -362,7 +402,7 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
           </div>
 
           <footer className="mt-auto flex flex-wrap items-center justify-end gap-3 border-t bg-muted/30 px-6 py-4">
-            {!canApprove && canEdit && <span className="mr-auto text-xs text-muted-foreground">Scheduling sends it to an approver first.</span>}
+            {!canApprove && canEdit && <span className="mr-auto text-xs text-muted-foreground">An approver checks and publishes it.</span>}
             <Button variant="outline" size="lg" onClick={() => save('draft')} disabled={!canEdit || !!saving}>
               {saving === 'draft' ? 'Saving…' : 'Save as draft'}
             </Button>
@@ -376,16 +416,19 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
         <AiPanel
           accountId={accountId}
           visual={visualFor(format, { file, media, removeImage, initial })}
-          draft={{ format, caption, topic, industry, cta }}
-          onImagePrompt={(text) => {
-            setGenPrompt(text)
-            if (format !== 'image') setFormat('image')
-            toast.success('Prompt added to Generate with AI under Image')
+          ask={params.get('ask') ?? undefined}
+          draft={{ format, caption, topic, industry, cta, goal, scheduledAt: scheduled ? zonedInputToIso(scheduled, zone) : null, details }}
+          onUsePoll={(question, options) => {
+            const before = details
+            setDetails((d) => ({ ...d, question, options }))
+            toast.success('Poll replaced', { action: { label: 'Undo', onClick: () => setDetails(before) } })
           }}
           onUseText={(text) => {
             const before = caption
             setCaption(text)
-            toast.success('Post text replaced', { action: { label: 'Undo', onClick: () => setCaption(before) } })
+            toast.success('Post text replaced', {
+              action: { label: 'Undo', onClick: () => setCaption(before) },
+            })
           }}
         />
       </div>
@@ -419,10 +462,8 @@ function FormatFields(props: {
   setRemoveImage: (v: boolean) => void
   imageAlt: string
   setImageAlt: (v: string) => void
-  imageGen: React.ReactNode
-  carousel: { source: 'generate' | 'upload'; setSource: (s: 'generate' | 'upload') => void; generator: React.ReactNode }
 }) {
-  const { format, details, setDetail, media, setMedia, initial, file, setFile, removeImage, setRemoveImage, imageAlt, setImageAlt, imageGen, carousel } = props
+  const { format, details, setDetail, media, setMedia, initial, file, setFile, removeImage, setRemoveImage, imageAlt, setImageAlt } = props
   if (format === 'image') {
     return (
       <div>
@@ -441,36 +482,21 @@ function FormatFields(props: {
           <input type="file" accept="image/jpeg,image/png,image/gif" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
         </label>
         {(file || (initial?.has_image && !removeImage)) && (
-          <Input className="mt-2 h-10 rounded-xl" value={imageAlt} onChange={(e) => setImageAlt(e.target.value)} placeholder="Alt text: describe the image for screen readers" />
+          <Input
+            className="mt-2 h-10 rounded-xl"
+            value={imageAlt}
+            onChange={(e) => setImageAlt(e.target.value)}
+            placeholder="Alt text: describe the image for screen readers"
+          />
         )}
-        {file && file.name.startsWith('ai-image-') && <FilePreview file={file} />}
-        <div className="mt-3">{imageGen}</div>
+        {file && <FilePreview file={file} />}
       </div>
     )
   }
   if (format === 'carousel') {
     return (
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-3">
-          <Label className="block font-semibold">Carousel</Label>
-          <div role="tablist" aria-label="Carousel source" className="ml-auto flex rounded-lg bg-secondary p-1">
-            {(['generate', 'upload'] as const).map((m) => (
-              <button
-                key={m}
-                role="tab"
-                type="button"
-                aria-selected={carousel.source === m}
-                onClick={() => carousel.setSource(m)}
-                className={cn(
-                  'rounded-md px-3 py-1 text-xs font-medium transition-colors',
-                  carousel.source === m ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {m === 'generate' ? 'Generate with AI' : media || initial?.has_media ? 'Attached PDF' : 'Upload a PDF'}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Label className="block font-semibold">Carousel</Label>
         <Input
           value={details.document_title ?? ''}
           onChange={(e) => setDetail('document_title', e.target.value)}
@@ -478,14 +504,14 @@ function FormatFields(props: {
           className="h-10 rounded-xl"
           placeholder="Document title shown on LinkedIn, e.g. 5 signs your school has outgrown its LMS"
         />
-        {carousel.source === 'generate' ? (
-          carousel.generator
-        ) : (
-          <>
-            <MediaPicker accept="application/pdf" label="the PDF (up to 100 MB)" file={media} onFile={setMedia} current={initial?.has_media ? initial : undefined} />
-            <p className="text-xs text-muted-foreground">LinkedIn carousels are PDF documents: one slide per page. Make the first slide the hook.</p>
-          </>
-        )}
+        <MediaPicker
+          accept="application/pdf"
+          label="the PDF (up to 100 MB)"
+          file={media}
+          onFile={setMedia}
+          current={initial?.has_media ? initial : undefined}
+        />
+        <p className="text-xs text-muted-foreground">LinkedIn carousels are PDF documents: one slide per page. Make the first slide the hook.</p>
       </div>
     )
   }
@@ -493,7 +519,13 @@ function FormatFields(props: {
     return (
       <div className="space-y-2">
         <Label className="block font-semibold">Video</Label>
-        <MediaPicker accept="video/mp4,video/quicktime" label="the video (MP4 or MOV, up to 200 MB)" file={media} onFile={setMedia} current={initial?.has_media ? initial : undefined} />
+        <MediaPicker
+          accept="video/mp4,video/quicktime"
+          label="the video (MP4 or MOV, up to 200 MB)"
+          file={media}
+          onFile={setMedia}
+          current={initial?.has_media ? initial : undefined}
+        />
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={!!details.subtitles} onChange={(e) => setDetail('subtitles', e.target.checked)} />
           Subtitles added (many people watch with the sound off)
@@ -506,7 +538,13 @@ function FormatFields(props: {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label className="mb-2 block font-semibold">Article / newsletter title</Label>
-          <Input value={details.title ?? ''} onChange={(e) => setDetail('title', e.target.value)} maxLength={150} className="h-10 rounded-xl" placeholder="e.g. Gulf business-tech brief: November" />
+          <Input
+            value={details.title ?? ''}
+            onChange={(e) => setDetail('title', e.target.value)}
+            maxLength={150}
+            className="h-10 rounded-xl"
+            placeholder="e.g. Gulf business-tech brief: November"
+          />
         </div>
         <div>
           <Label className="mb-2 block font-semibold">Link (if already published)</Label>
@@ -521,7 +559,13 @@ function FormatFields(props: {
         <Label className="block font-semibold">
           Poll question <span className="text-bad-fg">*</span>
         </Label>
-        <Input value={details.question ?? ''} onChange={(e) => setDetail('question', e.target.value)} maxLength={140} className="h-10 rounded-xl" placeholder="e.g. What slows down your ERP project most?" />
+        <Input
+          value={details.question ?? ''}
+          onChange={(e) => setDetail('question', e.target.value)}
+          maxLength={140}
+          className="h-10 rounded-xl"
+          placeholder="e.g. What slows down your ERP project most?"
+        />
         <div className="grid gap-2 sm:grid-cols-2">
           {[0, 1, 2, 3].map((i) => (
             <Input
@@ -544,7 +588,10 @@ function FormatFields(props: {
           <SimpleSelect
             value={details.duration ?? '1w'}
             onChange={(v) => setDetail('duration', v as PlannedDetails['duration'])}
-            options={Object.entries(DURATION_LABELS).map(([value, label]) => ({ value, label }))}
+            options={Object.entries(DURATION_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
           />
         </div>
         <p className="text-xs text-muted-foreground">LinkedIn polls: question up to 140 characters, 2 to 4 options of up to 30 characters.</p>
@@ -596,28 +643,75 @@ export function MediaPicker({
 
 // ---------------------------------------------------------------- AI suggestions (only on Analyse)
 
-type Draft = { format: PlannedFormat; caption: string; topic: string; industry: string; cta: string }
+type Draft = {
+  format: PlannedFormat
+  caption: string
+  topic: string
+  industry: string
+  cta: string
+  goal: PostGoal | null
+  /** The chosen posting time (ISO), for Analyse → Posting time */
+  scheduledAt?: string | null
+  details?: PlannedDetails
+}
 
 /** The post's image or PDF (or video, which the AI can't read), new or saved earlier */
-type Visual = { key: string; name: string; kind: 'image' | 'pdf' | 'video'; load: () => Promise<File> } | null
+type Visual = {
+  key: string
+  name: string
+  kind: 'image' | 'pdf' | 'video'
+  load: () => Promise<File>
+} | null
 
 function visualFor(
   format: PlannedFormat,
-  { file, media, removeImage, initial }: { file: File | null; media: File | null; removeImage: boolean; initial?: PlannedPost },
+  {
+    file,
+    media,
+    removeImage,
+    initial,
+  }: {
+    file: File | null
+    media: File | null
+    removeImage: boolean
+    initial?: PlannedPost
+  },
 ): Visual {
   if (format === 'image') {
-    if (file) return { key: `new:${file.name}:${file.size}`, name: file.name, kind: 'image', load: async () => file }
+    if (file)
+      return {
+        key: `new:${file.name}:${file.size}`,
+        name: file.name,
+        kind: 'image',
+        load: async () => file,
+      }
     if (initial?.has_image && !removeImage) {
       const url = api.plannedImageUrl(initial.id, initial.approved_at ?? 'x')
-      return { key: `saved-image:${initial.id}`, name: 'the saved image', kind: 'image', load: () => fetchAsFile(url, 'image.jpg') }
+      return {
+        key: `saved-image:${initial.id}`,
+        name: 'the saved image',
+        kind: 'image',
+        load: () => fetchAsFile(url, 'image.jpg'),
+      }
     }
   }
   if (format === 'carousel' || format === 'video') {
     const kind = format === 'carousel' ? 'pdf' : 'video'
-    if (media) return { key: `new:${media.name}:${media.size}`, name: media.name, kind, load: async () => media }
+    if (media)
+      return {
+        key: `new:${media.name}:${media.size}`,
+        name: media.name,
+        kind,
+        load: async () => media,
+      }
     if (initial?.has_media && initial.format === format) {
       const name = initial.media_name ?? (kind === 'pdf' ? 'carousel.pdf' : 'video')
-      return { key: `saved-media:${initial.id}`, name, kind, load: () => fetchAsFile(api.plannedMediaUrl(initial.id), name) }
+      return {
+        key: `saved-media:${initial.id}`,
+        name,
+        kind,
+        load: () => fetchAsFile(api.plannedMediaUrl(initial.id), name),
+      }
     }
   }
   return null
@@ -644,19 +738,20 @@ function VisualChip({ visual, include, setInclude }: { visual: NonNullable<Visua
       </label>
       {include && visual.kind === 'pdf' && (
         <p className="mt-1 pl-6 text-muted-foreground">
-          A PDF makes each request cost more (roughly $0.05–0.15 for a 10-slide deck). In Chat it’s cached after the first message, so
-          later messages cost much less.
+          A PDF makes each request cost more (roughly $0.05–0.15 for a 10-slide deck). In Chat it’s cached after the first message, so later messages cost much
+          less.
         </p>
       )}
     </div>
   )
 }
-const TABS = [
-  { value: 'suggestions', label: 'Suggestions', icon: Sparkles },
-  { value: 'competitors', label: 'Competitor insights', icon: LineChart },
-  { value: 'ideas', label: 'Content ideas', icon: Lightbulb },
-] as const
-const FIX_ICON = { hashtags: Hash, shorter: AlignLeft, cta: MousePointerClick } as const
+const FIX_ICON = {
+  hashtags: Hash,
+  shorter: AlignLeft,
+  cta: MousePointerClick,
+} as const
+
+const VISUAL_LABEL: Partial<Record<PlannedFormat, string>> = { image: 'Image', video: 'Video', carousel: 'Carousel slides' }
 
 async function copy(text: string) {
   try {
@@ -667,24 +762,79 @@ async function copy(text: string) {
   }
 }
 
+/** The parts of this post Analyse can look at, with what's there now */
+function useParts(draft: Draft, visual: Visual) {
+  const tz = useTz()
+  const parts: { value: AnalysePart; label: string; icon: typeof Type; detail: string }[] = [
+    {
+      value: 'text',
+      label: 'Post text',
+      icon: Type,
+      detail: draft.caption.trim() ? `${draft.caption.length.toLocaleString()} characters: hook, clarity, call to action, hashtags` : 'Nothing written yet',
+    },
+  ]
+  const visualLabel = VISUAL_LABEL[draft.format]
+  if (visualLabel)
+    parts.push({
+      value: 'visual',
+      label: visualLabel,
+      icon: FORMAT_ICON[draft.format],
+      detail: !visual
+        ? 'Nothing attached yet: suggests what to make, with a prompt'
+        : visual.kind === 'video'
+          ? `${visual.name}: the AI can’t watch videos, so it suggests from the text`
+          : `${visual.name}: the AI looks at it`,
+    })
+  parts.push({
+    value: 'timing',
+    label: 'Posting time',
+    icon: CalendarClock,
+    detail: draft.scheduledAt
+      ? `${tz.weekday(draft.scheduledAt)} ${tz.dual(draft.scheduledAt)}: checked against your past posts`
+      : 'Not set: suggests a time from your past posts',
+  })
+  if (draft.format === 'poll')
+    parts.push({
+      value: 'poll',
+      label: 'Poll question & options',
+      icon: FORMAT_ICON.poll,
+      detail: draft.details?.question ? `${(draft.details.options ?? []).filter((o) => o.trim()).length} options` : 'No question yet',
+    })
+  return parts
+}
+
 function AnalyseMode({
   accountId,
   draft,
+  visual,
   onUseText,
+  onUsePoll,
   getAttachment,
-  onImagePrompt,
 }: {
   accountId: number
   draft: Draft
+  visual: Visual
   onUseText: (text: string) => void
-  getAttachment: () => Promise<File | null>
-  onImagePrompt: (text: string) => void
+  onUsePoll: (question: string, options: string[]) => void
+  getAttachment: (force?: boolean) => Promise<File | null>
 }) {
   const auth = useAuth()
-  const [instructions, setInstructions] = useState('')
-  const [tab, setTab] = useState<(typeof TABS)[number]['value']>('suggestions')
-  const [analysed, setAnalysed] = useState<{ result: PostAssistResult; caption: string; cost: number } | null>(null)
-  const status = useQuery({ queryKey: ['post-assist', accountId], queryFn: () => api.postAssistStatus(accountId), staleTime: 30_000 })
+  const parts = useParts(draft, visual)
+  const [picking, setPicking] = useState(false)
+  const [picked, setPicked] = useState<AnalysePart[]>(['text', 'visual', 'timing', 'poll'])
+  const chosen = picked.filter((f) => parts.some((o) => o.value === f))
+  const toggle = (f: AnalysePart) => setPicked((cur) => (cur.includes(f) ? cur.filter((x) => x !== f) : [...cur, f]))
+  const [analysed, setAnalysed] = useState<{
+    result: PostAssistResult
+    caption: string
+    cost: number
+    format: PlannedFormat
+  } | null>(null)
+  const status = useQuery({
+    queryKey: ['post-assist', accountId],
+    queryFn: () => api.postAssistStatus(accountId),
+    staleTime: 30_000,
+  })
   const run = useMutation({
     mutationFn: async () =>
       api.postAssist(
@@ -695,13 +845,18 @@ function AnalyseMode({
           topic: draft.topic.trim() || null,
           industry: draft.industry.trim() || null,
           cta: draft.cta.trim() || null,
-          instructions: instructions.trim() || null,
+          goal: draft.goal,
+          focus: chosen,
+          scheduled_at: draft.scheduledAt ?? null,
+          details: draft.details ?? {},
+          media_attached: !!visual,
         },
-        await getAttachment(),
+        // The image or slides go along only when they're picked
+        chosen.includes('visual') ? await getAttachment(true) : null,
       ),
     onSuccess: (r) => {
-      setAnalysed({ result: r.result, caption: draft.caption, cost: r.cost_usd })
-      setTab('suggestions')
+      setAnalysed({ result: r.result, caption: draft.caption, cost: r.cost_usd, format: draft.format })
+      setPicking(false)
       status.refetch()
     },
     onError: (e) => toast.error((e as Error).message),
@@ -714,116 +869,103 @@ function AnalyseMode({
   const left = status.data ? status.data.daily_limit - status.data.runs_today : null
   const stale = analysed && analysed.caption !== draft.caption
   const r = analysed?.result
+  const blocked = !configured || !auth.can('editor') || left === 0
 
   return (
-      <div className="space-y-4">
+    <div className="space-y-4">
+      {!picking ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={() => setPicking(true)} disabled={blocked || run.isPending}>
+            <Sparkles /> {run.isPending ? 'Analysing…' : analysed ? 'Analyse again' : 'Analyse'}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {left != null && configured ? `${left} of ${status.data!.daily_limit} analyses left today` : ''}
+          </span>
+        </div>
+      ) : (
         <div className="rounded-xl ring-1 ring-border">
-          <div className="flex items-center gap-2 px-4 pt-3 text-sm font-semibold">
-            <Sparkles className="size-4 text-primary" /> Instructions for the AI <span className="font-normal text-muted-foreground">(optional)</span>
-          </div>
-          <Textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value.slice(0, MAX_INSTRUCTIONS))}
-            rows={2}
-            className="resize-none border-0 bg-transparent shadow-none focus-visible:ring-0"
-            placeholder="e.g. Make it more engaging, focus on school principals, add a stronger CTA, or suggest a visual idea…"
-          />
-          <div className="flex flex-wrap items-center gap-3 border-t px-4 py-2.5">
-            <Button onClick={() => run.mutate()} disabled={!configured || !draft.caption.trim() || run.isPending || !auth.can('editor') || left === 0}>
-              <Sparkles /> {run.isPending ? 'Analysing…' : analysed ? 'Analyse again' : 'Analyse'}
+          <div className="px-4 pt-3 pb-1 text-sm font-semibold">What should the AI look at?</div>
+          <ul className="divide-y">
+            {parts.map((o) => {
+              const on = chosen.includes(o.value)
+              return (
+                <li key={o.value}>
+                  <label className="flex cursor-pointer items-start gap-3 px-4 py-2.5 hover:bg-muted/50">
+                    <input type="checkbox" className="mt-1 accent-[var(--primary)]" checked={on} onChange={() => toggle(o.value)} />
+                    <o.icon className={cn('mt-0.5 size-4 shrink-0', on ? 'text-primary' : 'text-muted-foreground')} />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium">{o.label}</span>
+                      <span className="block text-xs text-muted-foreground">{o.detail}</span>
+                    </span>
+                  </label>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="flex flex-wrap items-center gap-2 border-t px-4 py-3">
+            <span className="mr-auto text-xs text-muted-foreground">
+              {!draft.caption.trim()
+                ? 'Write some post text first.'
+                : !chosen.length
+                  ? 'Pick at least one.'
+                  : left != null && configured
+                    ? `Uses 1 of ${left} analyses left today`
+                    : ''}
+            </span>
+            <Button variant="ghost" onClick={() => setPicking(false)} disabled={run.isPending}>
+              Cancel
             </Button>
-            <span className="text-xs text-muted-foreground">
-              {!draft.caption.trim() ? 'Write some post text first.' : left != null && configured ? `${left} of ${status.data!.daily_limit} analyses left today` : ''}
-            </span>
-            <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-              {instructions.length} / {MAX_INSTRUCTIONS}
-            </span>
+            <Button onClick={() => run.mutate()} disabled={blocked || !draft.caption.trim() || !chosen.length || run.isPending}>
+              <Sparkles /> {run.isPending ? 'Analysing…' : 'Analyse'}
+            </Button>
           </div>
         </div>
+      )}
 
-        {/* Tabs */}
-        <div role="tablist" className="flex flex-wrap gap-2">
-          {TABS.map((t) => (
-            <button
-              key={t.value}
-              role="tab"
-              type="button"
-              aria-selected={tab === t.value}
-              onClick={() => setTab(t.value)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[13px] font-medium ring-1 transition-colors',
-                tab === t.value ? 'bg-primary/10 text-primary ring-primary/30' : 'text-muted-foreground ring-border hover:text-foreground',
-              )}
-            >
-              <t.icon className="size-4" />
-              {t.label}
-            </button>
-          ))}
+      {run.isPending ? (
+        <div className="space-y-3">
+          <Skeleton className="h-36 rounded-xl" />
+          <Skeleton className="h-24 rounded-xl" />
         </div>
-
-        {run.isPending ? (
-          <div className="space-y-3">
-            <Skeleton className="h-36 rounded-xl" />
-            <Skeleton className="h-24 rounded-xl" />
-          </div>
-        ) : !r ? (
-          <div className="rounded-xl border border-dashed px-6 py-10 text-center">
-            <Sparkles className="mx-auto mb-3 size-6 text-primary/60" />
-            <p className="text-sm font-medium">Nothing is sent to the AI until you click Analyse</p>
-            <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
-              You’ll get an improved version of the text, an image idea, quick fixes (hashtags, shorter, stronger CTA), notes from your
-              Competitors page and follow-up post ideas.
+      ) : !r ? (
+        <div className="rounded-xl border border-dashed px-6 py-10 text-center">
+          <Sparkles className="mx-auto mb-3 size-6 text-primary/60" />
+          <p className="text-sm font-medium">Nothing is sent to the AI until you click Analyse</p>
+          <p className="mx-auto mt-1 max-w-sm text-xs text-muted-foreground">
+            Pick the parts of the post to check: the text, the {VISUAL_LABEL[draft.format]?.toLowerCase() ?? 'visual'}, the posting time and more. Suggestions
+            for each appear here.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {stale && (
+            <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
+              You’ve edited the text since this analysis. Click “Analyse again” to refresh it.
             </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {stale && <p className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">You’ve edited the text since this analysis. Click “Analyse again” to refresh it.</p>}
+          )}
 
-            {tab === 'suggestions' && (
-              <>
-                <Block icon={Type} title="Improved post text" action={<Button variant="outline" size="sm" onClick={() => onUseText(r.improved_text)}>Use this</Button>}>
-                  <TextBox text={r.improved_text} />
-                  {r.what_changed.length > 0 && (
-                    <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
-                      {r.what_changed.map((w) => (
-                        <li key={w}>{w}</li>
-                      ))}
-                    </ul>
-                  )}
-                </Block>
-
-                {r.image_prompt && (
-                  <Block
-                    icon={ImageIcon}
-                    title="Image suggestion (prompt)"
-                    subtitle="Generate it with the image AI, or brief your designer with it."
-                    action={
-                      <Button variant="outline" size="sm" onClick={() => onImagePrompt(r.image_prompt!)}>
-                        Use for image
-                      </Button>
-                    }
-                  >
-                    <TextBox text={r.image_prompt} />
-                  </Block>
+          <>
+            {r.text && (
+              <Block
+                icon={Type}
+                title="Post text"
+                action={
+                  <Button variant="outline" size="sm" onClick={() => onUseText(r.text!.improved_text)}>
+                    Use this
+                  </Button>
+                }
+              >
+                <TextBox text={r.text.improved_text} />
+                {r.text.what_changed.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+                    {r.text.what_changed.map((w) => (
+                      <li key={w}>{w}</li>
+                    ))}
+                  </ul>
                 )}
-
-                {r.cautions.length > 0 && (
-                  <div className="flex gap-3 rounded-xl border border-warn/50 bg-warn/10 px-4 py-3 text-sm">
-                    <TriangleAlert className="mt-0.5 size-4 shrink-0" />
-                    <ul className="space-y-1">
-                      {r.cautions.map((c) => (
-                        <li key={c}>{c}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div>
-                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                    <Sparkles className="size-4 text-primary" /> Other suggestions
-                  </h3>
-                  <div className="grid gap-2 sm:grid-cols-3">
-                    {r.quick_fixes.map((f) => {
+                {r.text.quick_fixes.length > 0 && (
+                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                    {r.text.quick_fixes.map((f) => {
                       const Icon = FIX_ICON[f.kind]
                       return (
                         <button
@@ -841,52 +983,90 @@ function AnalyseMode({
                       )
                     })}
                   </div>
-                </div>
-              </>
+                )}
+              </Block>
             )}
 
-            {tab === 'competitors' &&
-              (r.competitor_insights.length ? (
-                <Block icon={LineChart} title="From your Competitors page">
-                  <ul className="list-disc space-y-1.5 pl-5 text-sm">
-                    {r.competitor_insights.map((c) => (
-                      <li key={c}>{c}</li>
+            {r.visual && (
+              <Block icon={FORMAT_ICON[analysed!.format] ?? ImagePlus} title={VISUAL_LABEL[analysed!.format] ?? 'Visual'}>
+                <ul className="list-disc space-y-1 pl-5 text-sm">
+                  {r.visual.notes.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+                {(r.visual.prompt || r.visual.slide_prompts) && (
+                  <div className="mt-3">
+                    {r.visual.prompt && (analysed!.format === 'image' || analysed!.format === 'video') && (
+                      <VisualPromptView kind={analysed!.format} prompt={r.visual.prompt} />
+                    )}
+                    {r.visual.slide_prompts && <SlidePromptsView prompts={r.visual.slide_prompts} />}
+                  </div>
+                )}
+              </Block>
+            )}
+
+            {r.timing && (
+              <Block icon={CalendarClock} title="Posting time">
+                <p className="text-sm">{r.timing.verdict}</p>
+                {r.timing.suggested_time && (
+                  <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                    <Clock className="size-3.5" /> Try {r.timing.suggested_time} (UAE)
+                  </p>
+                )}
+                {r.timing.suggestions.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+                    {r.timing.suggestions.map((t) => (
+                      <li key={t}>{t}</li>
                     ))}
                   </ul>
-                  <p className="mt-3 text-xs text-muted-foreground">Based only on what your team recorded about competitors, not live data.</p>
-                </Block>
-              ) : (
-                <p className="rounded-xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">
-                  No competitor notes to draw on.{' '}
-                  <Link to="/brand/competitors" className="underline">
-                    Add competitors
-                  </Link>{' '}
-                  and what you’ve observed about them, then analyse again.
-                </p>
-              ))}
-
-            {tab === 'ideas' && (
-              <div className="space-y-2">
-                {r.content_ideas.map((i) => {
-                  const Icon = FORMAT_ICON[i.format] ?? Lightbulb
-                  return (
-                    <div key={i.title} className="flex gap-3 rounded-xl p-4 ring-1 ring-border">
-                      <IconTile icon={Icon} className="size-8" />
-                      <div className="min-w-0">
-                        <div className="text-sm font-semibold">{i.title}</div>
-                        <div className="mt-0.5 text-sm text-muted-foreground">{i.angle}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">{PLANNED_FORMAT_LABELS[i.format] ?? i.format}</div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+                )}
+              </Block>
             )}
 
-            <p className="text-right text-[11px] text-muted-foreground">This analysis cost about ${analysed!.cost.toFixed(3)}</p>
-          </div>
-        )}
-      </div>
+            {r.poll && (
+              <Block
+                icon={FORMAT_ICON.poll}
+                title="Poll"
+                action={
+                  <Button variant="outline" size="sm" onClick={() => onUsePoll(r.poll!.question, r.poll!.options)}>
+                    Use this
+                  </Button>
+                }
+              >
+                <p className="text-sm font-medium">{r.poll.question}</p>
+                <ul className="mt-2 space-y-1">
+                  {r.poll.options.map((o) => (
+                    <li key={o} className="rounded-lg px-3 py-1.5 text-sm ring-1 ring-border">
+                      {o}
+                    </li>
+                  ))}
+                </ul>
+                {r.poll.notes.length > 0 && (
+                  <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-muted-foreground">
+                    {r.poll.notes.map((n) => (
+                      <li key={n}>{n}</li>
+                    ))}
+                  </ul>
+                )}
+              </Block>
+            )}
+
+            {r.cautions.length > 0 && (
+              <div className="flex gap-3 rounded-xl border border-warn/50 bg-warn/10 px-4 py-3 text-sm">
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                <ul className="space-y-1">
+                  {r.cautions.map((c) => (
+                    <li key={c}>{c}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+
+          <p className="text-right text-[11px] text-muted-foreground">This analysis cost about ${analysed!.cost.toFixed(3)}</p>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -900,28 +1080,40 @@ const MODES = [
 function AiPanel({
   accountId,
   visual,
+  ask,
   draft,
   onUseText,
-  onImagePrompt,
+  onUsePoll,
 }: {
   accountId: number
   visual: Visual
+  /** A question typed on the Dashboard: opens the chat with it in the reply box */
+  ask?: string
   draft: Draft
   onUseText: (text: string) => void
-  onImagePrompt: (text: string) => void
+  onUsePoll: (question: string, options: string[]) => void
 }) {
-  const [mode, setMode] = useState<(typeof MODES)[number]['value']>('analyse')
+  const [mode, setMode] = useState<(typeof MODES)[number]['value']>(ask ? 'chat' : 'analyse')
   const [include, setInclude] = useState(true)
   // The prepared (shrunk) file is kept, so a chat doesn't re-process it on every message
   const prepared = useRef<{ key: string; file: File } | null>(null)
-  const getAttachment = async (): Promise<File | null> => {
-    if (!visual || !include || visual.kind === 'video') return null
-    if (prepared.current?.key !== visual.key) prepared.current = { key: visual.key, file: await prepareForAI(await visual.load()) }
+  // force: Analyse sends it whenever the visual is picked there (the switch below is for Chat)
+  const getAttachment = async (force = false): Promise<File | null> => {
+    if (!visual || (!include && !force) || visual.kind === 'video') return null
+    if (prepared.current?.key !== visual.key)
+      prepared.current = {
+        key: visual.key,
+        file: await prepareForAI(await visual.load()),
+      }
     return prepared.current.file
   }
-  const status = useQuery({ queryKey: ['post-assist', accountId], queryFn: () => api.postAssistStatus(accountId), staleTime: 30_000 })
+  const status = useQuery({
+    queryKey: ['post-assist', accountId],
+    queryFn: () => api.postAssistStatus(accountId),
+    staleTime: 30_000,
+  })
   return (
-    <section className="rounded-2xl bg-card shadow-sm ring-1 ring-border">
+    <section className="rounded-[1.8rem] bg-card">
       <header className="flex flex-wrap items-start gap-3 px-6 pt-5">
         <Sparkles className="mt-0.5 size-7 shrink-0 text-primary" />
         <div className="min-w-0 flex-1">
@@ -953,18 +1145,18 @@ function AiPanel({
           <div className="flex gap-3 rounded-xl border border-warn/50 bg-warn/10 px-4 py-3 text-sm">
             <TriangleAlert className="mt-0.5 size-4 shrink-0" />
             <span>
-              Claude isn’t connected yet, so the AI is switched off. It needs an Anthropic API key added to the backend (waiting on manager
-              approval). Everything else on this page works without it.
+              Claude isn’t connected yet, so the AI is switched off. It needs an Anthropic API key added to the backend (waiting on manager approval).
+              Everything else on this page works without it.
             </span>
           </div>
         )}
-        {visual && <VisualChip visual={visual} include={include} setInclude={setInclude} />}
+        {visual && mode === 'chat' && <VisualChip visual={visual} include={include} setInclude={setInclude} />}
         {/* Both stay mounted, so switching modes never loses an analysis or a conversation */}
         <div className={cn(mode !== 'analyse' && 'hidden')}>
-          <AnalyseMode accountId={accountId} draft={draft} onUseText={onUseText} getAttachment={getAttachment} onImagePrompt={onImagePrompt} />
+          <AnalyseMode accountId={accountId} draft={draft} visual={visual} onUseText={onUseText} onUsePoll={onUsePoll} getAttachment={getAttachment} />
         </div>
         <div className={cn(mode !== 'chat' && 'hidden')}>
-          <ChatMode accountId={accountId} draft={draft} onUseText={onUseText} getAttachment={getAttachment} />
+          <ChatMode accountId={accountId} draft={draft} onUseText={onUseText} getAttachment={() => getAttachment()} initialText={ask} />
         </div>
       </div>
     </section>
@@ -986,20 +1178,26 @@ function ChatMode({
   draft,
   onUseText,
   getAttachment,
+  initialText,
 }: {
   accountId: number
   draft: Draft
   onUseText: (text: string) => void
   getAttachment: () => Promise<File | null>
+  initialText?: string
 }) {
   const auth = useAuth()
   const [entries, setEntries] = useState<ChatEntry[]>([])
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText ?? '')
   const [cost, setCost] = useState(0)
   // Off by default: each message with web search costs a little more (searches + a short research step)
   const [web, setWeb] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
-  const status = useQuery({ queryKey: ['post-chat', accountId], queryFn: () => api.postChatStatus(accountId), staleTime: 30_000 })
+  const status = useQuery({
+    queryKey: ['post-chat', accountId],
+    queryFn: () => api.postChatStatus(accountId),
+    staleTime: 30_000,
+  })
   const limit = status.data?.session_limit ?? 20
   const send = useMutation({
     mutationFn: async (history: ChatEntry[]) =>
@@ -1011,6 +1209,7 @@ function ChatMode({
           topic: draft.topic.trim() || null,
           industry: draft.industry.trim() || null,
           cta: draft.cta.trim() || null,
+          goal: draft.goal,
           messages: history.map((e) => (e.role === 'user' ? { role: 'user', content: e.content } : { role: 'assistant', content: assistantText(e.turn) })),
           web_search: web,
         },
@@ -1059,14 +1258,15 @@ function ChatMode({
   }
   const lastAssistant = [...entries].reverse().find((e) => e.role === 'assistant') as Extract<ChatEntry, { role: 'assistant' }> | undefined
 
-  if (!entries.length && !send.isPending) {
+  // A question brought from the Dashboard skips the start screen: it waits in the reply box until sent
+  if (!entries.length && !send.isPending && !initialText) {
     return (
       <div className="rounded-xl border border-dashed px-6 py-10 text-center">
         <MessagesSquare className="mx-auto mb-3 size-6 text-primary/60" />
         <p className="text-sm font-medium">Work on this post together with the AI</p>
         <p className="mx-auto mt-1 mb-4 max-w-sm text-xs text-muted-foreground">
-          It starts by asking you a few questions (goal, audience, what readers should do), then writes and revises the post with you. Every
-          message is one AI request, so nothing is used until you start.
+          It starts by asking you a few questions (goal, audience, what readers should do), then writes and revises the post with you. Every message is one AI
+          request, so nothing is used until you start.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button onClick={() => send.mutate([])} disabled={!configured || !auth.can('editor') || leftToday === 0}>
@@ -1085,10 +1285,15 @@ function ChatMode({
   return (
     <div className="flex flex-col rounded-xl ring-1 ring-border">
       <div className="max-h-[520px] min-h-64 space-y-4 overflow-y-auto p-4">
+        {!entries.length && !send.isPending && (
+          <p className="py-6 text-center text-sm text-muted-foreground">Your question is in the box below. Press send to ask the AI.</p>
+        )}
         {entries.map((e, i) =>
           e.role === 'user' ? (
             <div key={i} className="flex justify-end">
-              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm whitespace-pre-wrap text-primary-foreground">{e.content}</div>
+              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-sm whitespace-pre-wrap text-primary-foreground">
+                {e.content}
+              </div>
             </div>
           ) : (
             <div key={i} className="flex gap-2.5">
@@ -1138,7 +1343,15 @@ function ChatMode({
                   </div>
                 ))}
                 {e.turn.draft_text && (
-                  <Block icon={Type} title="Suggested post" action={<Button variant="outline" size="sm" onClick={() => onUseText(e.turn.draft_text!)}>Use this</Button>}>
+                  <Block
+                    icon={Type}
+                    title="Suggested post"
+                    action={
+                      <Button variant="outline" size="sm" onClick={() => onUseText(e.turn.draft_text!)}>
+                        Use this
+                      </Button>
+                    }
+                  >
                     <TextBox text={e.turn.draft_text} />
                   </Block>
                 )}
@@ -1151,7 +1364,9 @@ function ChatMode({
             <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Sparkles className="size-3.5 animate-pulse" />
             </span>
-            <div className="rounded-2xl rounded-tl-md bg-muted/60 px-4 py-2.5 text-sm text-muted-foreground">{web ? 'Searching the web, then thinking…' : 'Thinking…'}</div>
+            <div className="rounded-2xl rounded-tl-md bg-muted/60 px-4 py-2.5 text-sm text-muted-foreground">
+              {web ? 'Searching the web, then thinking…' : 'Thinking…'}
+            </div>
           </div>
         )}
         <div ref={bottom} />
@@ -1182,7 +1397,10 @@ function ChatMode({
         )}
         <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <label
-            className={cn('inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-0.5 ring-1', web ? 'bg-primary/10 text-primary ring-primary/30' : 'ring-border')}
+            className={cn(
+              'inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2 py-0.5 ring-1',
+              web ? 'bg-primary/10 text-primary ring-primary/30' : 'ring-border',
+            )}
             title="Let the AI look up current news, events and public competitor pages for your next messages (about $0.03–0.06 more per message)"
           >
             <input type="checkbox" className="sr-only" checked={web} onChange={(ev) => setWeb(ev.target.checked)} />
@@ -1209,7 +1427,19 @@ function ChatMode({
   )
 }
 
-function Block({ icon, title, subtitle, action, children }: { icon: typeof Type; title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Block({
+  icon,
+  title,
+  subtitle,
+  action,
+  children,
+}: {
+  icon: typeof Type
+  title: string
+  subtitle?: string
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
     <div className="rounded-xl p-4 ring-1 ring-border">
       <div className="mb-3 flex items-start gap-3">
@@ -1229,7 +1459,12 @@ function TextBox({ text }: { text: string }) {
   return (
     <div className="relative rounded-lg bg-muted/40 px-4 py-3 pr-11 text-sm leading-relaxed whitespace-pre-wrap ring-1 ring-border">
       {text}
-      <button type="button" onClick={() => copy(text)} aria-label="Copy" className="absolute top-2.5 right-2.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+      <button
+        type="button"
+        onClick={() => copy(text)}
+        aria-label="Copy"
+        className="absolute top-2.5 right-2.5 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
         <Copy className="size-4" />
       </button>
     </div>
@@ -1237,6 +1472,80 @@ function TextBox({ text }: { text: string }) {
 }
 
 // ---------------------------------------------------------------- preview
+
+/** The post roughly as it appears in the LinkedIn feed (shared by Create post's Preview and Publishing's Approve) */
+export function FeedPreview({
+  accountName,
+  caption,
+  format,
+  details,
+  imageSrc,
+  hasStoredImage = false,
+}: {
+  accountName: string
+  caption: string
+  format: PlannedFormat
+  details: PlannedDetails
+  imageSrc?: string | null
+  hasStoredImage?: boolean
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const short = hookPreview(caption)
+  const cut = short.endsWith('…') || caption.trim().split('\n').length > 3
+  const letters = accountName
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase()
+  return (
+    <div className="overflow-hidden rounded-2xl bg-card ring-1 ring-border">
+      <div className="flex items-center gap-3 px-4 pt-4">
+        <span className="flex size-11 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">{letters}</span>
+        <div className="leading-tight">
+          <div className="text-sm font-semibold">{accountName}</div>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            Now · <Globe className="size-3" />
+          </div>
+        </div>
+      </div>
+      <div className="px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
+        {expanded || !cut ? caption : short.replace(/…$/, '')}
+        {cut && !expanded && (
+          <button type="button" onClick={() => setExpanded(true)} className="ml-1 text-muted-foreground hover:underline">
+            …see more
+          </button>
+        )}
+      </div>
+      {format === 'image' && (imageSrc || hasStoredImage) && (
+        <div className="border-t bg-muted/40">
+          {imageSrc ? (
+            <img src={imageSrc} alt="" className="max-h-80 w-full object-cover" />
+          ) : (
+            <div className="py-10 text-center text-xs text-muted-foreground">Saved image</div>
+          )}
+        </div>
+      )}
+      {format === 'carousel' && (
+        <div className="border-t bg-muted/40 py-10 text-center text-xs text-muted-foreground">PDF carousel: {details.document_title || 'untitled'}</div>
+      )}
+      {format === 'video' && <div className="border-t bg-muted/40 py-10 text-center text-xs text-muted-foreground">Video</div>}
+      {format === 'article' && <div className="border-t bg-muted/40 px-4 py-4 text-sm font-semibold">{details.title || 'Article title'}</div>}
+      {format === 'poll' && (
+        <div className="space-y-2 border-t px-4 py-4">
+          <div className="text-sm font-semibold">{details.question || 'Poll question'}</div>
+          {(details.options ?? [])
+            .filter((o) => o.trim())
+            .map((o) => (
+              <div key={o} className="rounded-full px-4 py-1.5 text-center text-sm font-medium text-primary ring-1 ring-primary">
+                {o}
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 function PreviewDialog({
   open,
@@ -1257,7 +1566,6 @@ function PreviewDialog({
   image: File | null
   hasStoredImage: boolean
 }) {
-  const [expanded, setExpanded] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   useEffect(() => {
     if (!image) {
@@ -1268,10 +1576,6 @@ function PreviewDialog({
     setImageUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [image])
-  const short = hookPreview(caption)
-  const cut = short.endsWith('…') || caption.trim().split('\n').length > 3
-  const letters = accountName.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-lg">
@@ -1279,41 +1583,7 @@ function PreviewDialog({
           <DialogTitle>Preview</DialogTitle>
           <DialogDescription>Roughly how it appears in the LinkedIn feed. Line breaks and the “…see more” point vary by device.</DialogDescription>
         </DialogHeader>
-        <div className="rounded-xl bg-card ring-1 ring-border">
-          <div className="flex items-center gap-3 px-4 pt-4">
-            <span className="flex size-11 items-center justify-center rounded-md bg-primary text-sm font-bold text-primary-foreground">{letters}</span>
-            <div className="leading-tight">
-              <div className="text-sm font-semibold">{accountName}</div>
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                Now · <Globe className="size-3" />
-              </div>
-            </div>
-          </div>
-          <div className="px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
-            {expanded || !cut ? caption : short.replace(/…$/, '')}
-            {cut && !expanded && (
-              <button type="button" onClick={() => setExpanded(true)} className="ml-1 text-muted-foreground hover:underline">
-                …see more
-              </button>
-            )}
-          </div>
-          {format === 'image' && (imageUrl || hasStoredImage) && (
-            <div className="border-t bg-muted/40">{imageUrl ? <img src={imageUrl} alt="" className="max-h-80 w-full object-cover" /> : <div className="py-10 text-center text-xs text-muted-foreground">Saved image</div>}</div>
-          )}
-          {format === 'carousel' && <div className="border-t bg-muted/40 py-10 text-center text-xs text-muted-foreground">PDF carousel: {details.document_title || 'untitled'}</div>}
-          {format === 'video' && <div className="border-t bg-muted/40 py-10 text-center text-xs text-muted-foreground">Video</div>}
-          {format === 'article' && <div className="border-t bg-muted/40 px-4 py-4 text-sm font-semibold">{details.title || 'Article title'}</div>}
-          {format === 'poll' && (
-            <div className="space-y-2 border-t px-4 py-4">
-              <div className="text-sm font-semibold">{details.question || 'Poll question'}</div>
-              {(details.options ?? []).filter((o) => o.trim()).map((o) => (
-                <div key={o} className="rounded-full px-4 py-1.5 text-center text-sm font-medium text-primary ring-1 ring-primary">
-                  {o}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <FeedPreview accountName={accountName} caption={caption} format={format} details={details} imageSrc={imageUrl} hasStoredImage={hasStoredImage} />
       </DialogContent>
     </Dialog>
   )

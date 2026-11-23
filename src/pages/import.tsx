@@ -25,13 +25,9 @@ export function ImportPage() {
     <div className="mx-auto max-w-3xl space-y-4">
       <PageHeader
         eyebrow="Data"
+        back="/data?tab=posts"
         title="Import"
         description="Bring in history: LinkedIn's own page-analytics export, or the app's CSV template."
-        actions={
-          <Link to="/data" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
-            ← Back to Data
-          </Link>
-        }
       />
       <LinkedInExportSection accountId={account?.id} accountName={account?.name} accountKind={account?.kind} />
       <CsvSection accountId={account?.id} accountName={account?.name} />

@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { EmptyState, PageHeader, SimpleSelect } from '@/components/common'
+import { EmptyState, PageHeader, SimpleSelect, PostRef } from '@/components/common'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
@@ -34,26 +34,28 @@ import {
   type PlannedFormat,
   type PlannedPost,
   type PlannedStatus,
+  POST_GOALS,
 } from '@/lib/api'
-import { needsAction, PLANNED_FORMAT_LABELS } from '@/lib/publishing'
+import { dueByHand, needsAction, PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
-import { DURATION_LABELS } from '@/pages/create-post'
+import { DURATION_LABELS, FeedPreview } from '@/pages/create-post'
 
 const STATUS: Record<PlannedStatus, { label: string; cls: string }> = {
-  draft: { label: 'Draft', cls: 'bg-muted text-foreground border-border' },
-  approved: { label: 'Approved', cls: 'bg-info/10 text-info-fg border-info/30' },
+  draft: { label: 'Unpublished', cls: 'bg-muted text-foreground border-border' },
+  // Stored as "approved": the app publishes it at its scheduled time
+  approved: { label: 'Scheduled', cls: 'bg-info/10 text-info-fg border-info/30' },
   publishing: { label: 'Publishing…', cls: 'bg-info/10 text-info-fg border-info/30' },
   published: { label: 'Published', cls: 'bg-good/15 text-good-fg border-good/30' },
   failed: { label: 'Failed', cls: 'bg-bad/10 text-bad-fg border-bad/40' },
   missed: { label: 'Missed', cls: 'bg-serious/15 text-serious-fg border-serious/40' },
 }
 
-/** Status filter: "Needs action" matches the red dot (drafts to approve, hand posts to mark, failures) */
+/** Status filter: "Needs action" matches the red dot (unpublished drafts, hand posts to mark, failures) */
 const STATUS_FILTERS: { value: string; label: string; test: (p: PlannedPost) => boolean }[] = [
   { value: 'all', label: 'All', test: () => true },
   { value: 'action', label: 'Needs action', test: needsAction },
-  { value: 'draft', label: 'Draft', test: (p) => p.status === 'draft' },
-  { value: 'approved', label: 'Approved / scheduled', test: (p) => p.status === 'approved' || p.status === 'publishing' },
+  { value: 'draft', label: 'Unpublished', test: (p) => p.status === 'draft' || dueByHand(p) },
+  { value: 'approved', label: 'Scheduled', test: (p) => (p.status === 'approved' && !dueByHand(p)) || p.status === 'publishing' },
   { value: 'published', label: 'Published', test: (p) => p.status === 'published' },
   { value: 'problem', label: 'Failed or missed', test: (p) => p.status === 'failed' || p.status === 'missed' },
 ]
@@ -90,7 +92,7 @@ export function PublishingPage() {
     <div className="mx-auto max-w-5xl space-y-4">
       <PageHeader eyebrow="Content"
         title="Publishing"
-        description="Draft → approve → publish. Text and image posts can be published by the app; carousel, video, article and poll posts are approved here, posted on LinkedIn by hand, then marked as posted."
+        description="Preview a post, then publish it now or at its scheduled time. Text and image posts are published by the app; carousel, video, article and poll posts are posted on LinkedIn by hand, then marked as posted."
         actions={
           auth.can('editor') ? (
             <Button size="sm" onClick={() => navigate(tab === 'all' ? '/create' : `/create?format=${tab}`)}>
@@ -151,8 +153,8 @@ export function PublishingPage() {
 
       {isCompany ? (
         <div className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-3 text-sm">
-          <b>{account.name}</b> is a company page. You can draft, edit and approve posts here, but the app can’t post as the page until
-          LinkedIn’s Community Management API is approved. Until then, copy an approved caption and post it on LinkedIn by hand.
+          <b>{account.name}</b> is a company page. You can draft, edit and preview posts here, but the app can’t post as the page until
+          LinkedIn’s Community Management API is approved. Until then, Publish copies the text for you to post on LinkedIn by hand.
         </div>
       ) : (
         <ConnectionBanner connection={connection} />
@@ -165,7 +167,7 @@ export function PublishingPage() {
         </p>
       ) : (
         <p className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          The app can’t publish {PLANNED_FORMAT_LABELS[tab].toLowerCase()} posts yet. Draft and approve them here, post them on LinkedIn
+          The app can’t publish {PLANNED_FORMAT_LABELS[tab].toLowerCase()} posts yet. Draft and preview them here, post them on LinkedIn
           by hand, then click <b>Mark as posted</b> and paste the link, so the post is tracked with the right format.
         </p>
       )}
@@ -181,7 +183,7 @@ export function PublishingPage() {
       ) : (
         <div className="space-y-3">
           {shown.map((p) => (
-            <PlannedCard key={p.id} p={p} accountId={account.id} connection={connection} showFormat={tab === 'all'} onEdit={() => navigate(`/create/${p.id}`)} />
+            <PlannedCard key={p.id} p={p} accountId={account.id} accountName={account.name} connection={connection} showFormat={tab === 'all'} onEdit={() => navigate(`/create/${p.id}`)} />
           ))}
         </div>
       )}
@@ -232,22 +234,30 @@ const plural = (n: number) => `${n} minute${n === 1 ? '' : 's'}`
 function PlannedCard({
   p,
   accountId,
+  accountName,
   connection,
   showFormat,
   onEdit,
 }: {
   p: PlannedPost
   accountId: number
+  accountName: string
   connection?: LinkedInConnection
   showFormat: boolean
   onEdit: () => void
 }) {
   const tz = useTz()
   const [confirmPublish, setConfirmPublish] = useState(false)
+  const [reviewing, setReviewing] = useState(false) // the Approve preview window
   const [markPosted, setMarkPosted] = useState(false)
   const action = usePlannerMutation(accountId, (a: 'approve' | 'unapprove' | 'publish') => api.plannedAction(p.id, a))
   const remove = usePlannerMutation(accountId, () => api.deletePlanned(p.id))
-  const editable = p.status === 'draft' || p.status === 'failed' || p.status === 'missed'
+  // Preview → Publish: put it on the schedule (at its time) or clear it for publishing now
+  const schedule = usePlannerMutation(accountId, (now: boolean) => api.plannedAction(p.id, 'approve', { now }))
+  // Not published yet: can be previewed and published
+  const unpublished = p.status === 'draft' || p.status === 'failed' || p.status === 'missed'
+  // Scheduled posts can be edited too; saving takes them off the schedule until they're published again
+  const editable = unpublished || p.status === 'approved'
   const auth = useAuth()
   const waitMins = useMinutesLeft(p.retry_at)
   const waiting = waitMins !== null
@@ -286,12 +296,13 @@ function PlannedCard({
       : STATUS[p.status]
 
   return (
-    <div className="rounded-2xl bg-card p-5 shadow-sm ring-1 ring-border">
+    <div className="rounded-[1.8rem] bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
+          <PostRef id={p.ref} />
           {showFormat && <Badge variant="outline">{PLANNED_FORMAT_LABELS[p.format]}</Badge>}
           <Badge variant="outline" className={badge.cls}>
-            {p.manual && p.status === 'approved' ? 'Approved: post by hand' : badge.label}
+            {p.status === 'approved' && p.by_hand ? (dueByHand(p) ? 'Due: post it by hand' : 'Scheduled: post by hand') : badge.label}
           </Badge>
           <span className="inline-flex items-center gap-1 text-muted-foreground">
             <CalendarClock className="size-4" />
@@ -304,6 +315,7 @@ function PlannedCard({
                   : 'Not scheduled: publish manually'}
           </span>
           {p.visibility === 'CONNECTIONS' && <Badge variant="secondary">Connections only</Badge>}
+          {p.goal && <Badge variant="secondary">{POST_GOALS.find((g) => g.value === p.goal)?.label}</Badge>}
           {p.topic && <Badge variant="secondary">{p.topic}</Badge>}
         </div>
         <div className="flex flex-wrap gap-1.5">
@@ -312,17 +324,19 @@ function PlannedCard({
               <Pencil /> Edit
             </Button>
           )}
-          {editable && auth.can('approver') && (
-            <Button size="sm" onClick={() => run('approve')} disabled={action.isPending}>
+          {unpublished && auth.can('approver') && (
+            <Button size="sm" onClick={() => setReviewing(true)} disabled={action.isPending}>
               <CheckCircle2 /> Approve
             </Button>
           )}
           {p.status === 'approved' && auth.can('approver') && (
             <>
-              <Button size="sm" variant="outline" onClick={() => run('unapprove')} disabled={action.isPending}>
-                <Undo2 /> Un-approve
-              </Button>
-              {p.manual ? (
+              {!dueByHand(p) && (
+                <Button size="sm" variant="outline" onClick={() => run('unapprove')} disabled={action.isPending}>
+                  <Undo2 /> Unschedule
+                </Button>
+              )}
+              {p.by_hand ? (
                 <>
                   <Button size="sm" variant="outline" onClick={() => copyText(p.caption)}>
                     <Copy /> Copy text
@@ -403,6 +417,40 @@ function PlannedCard({
           <Hourglass className="size-4 shrink-0 text-warn-fg" /> LinkedIn was busy earlier. Trying again now…
         </p>
       )}
+
+      <ApproveDialog
+        open={reviewing}
+        onClose={() => setReviewing(false)}
+        p={p}
+        accountName={accountName}
+        connection={connection}
+        busy={action.isPending || schedule.isPending}
+        waitMins={waitMins}
+        onEdit={() => {
+          setReviewing(false)
+          onEdit()
+        }}
+        onPublish={(how) =>
+          schedule.mutate(how !== 'scheduled', {
+            onSuccess: () => {
+              setReviewing(false)
+              if (how === 'now') run('publish')
+              else if (how === 'scheduled')
+                toast.success(
+                  p.by_hand
+                    ? `Scheduled for ${tz.weekday(p.scheduled_at!)} ${tz.dual(p.scheduled_at!)}. At that time you’ll be reminded to post it on LinkedIn by hand.`
+                    : `Scheduled: the app will publish it ${tz.weekday(p.scheduled_at!)} ${tz.dual(p.scheduled_at!)}.`,
+                  { duration: 8000 },
+                )
+              else {
+                copyText(p.caption)
+                toast.success('Copied. Paste it on LinkedIn, then click Mark as posted here.', { duration: 8000 })
+              }
+            },
+            onError: (e) => toast.error(e.message),
+          })
+        }
+      />
 
       <Dialog open={confirmPublish} onOpenChange={setConfirmPublish}>
         <DialogContent>
@@ -519,6 +567,97 @@ function MarkPostedDialog({ p, accountId, onClose }: { p: PlannedPost; accountId
           <Button onClick={submit} disabled={mark.isPending || url.trim().length < 10}>
             {mark.isPending ? 'Saving…' : 'Mark as posted'}
           </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/** Approve: the post as it will appear on LinkedIn, with Edit and Publish.
+    A future scheduled time offers Publish now or Publish at that time (the app posts it then).
+    Formats or accounts the app can't post to: Publish copies the text to post by hand. */
+function ApproveDialog({
+  open,
+  onClose,
+  p,
+  accountName,
+  connection,
+  busy,
+  waitMins,
+  onEdit,
+  onPublish,
+}: {
+  open: boolean
+  onClose: () => void
+  p: PlannedPost
+  accountName: string
+  connection?: LinkedInConnection
+  busy: boolean
+  waitMins: number | null
+  onEdit: () => void
+  onPublish: (how: 'now' | 'scheduled' | 'copy') => void
+}) {
+  const tz = useTz()
+  const byApp = !p.by_hand && !!connection && !connection.expired
+  const later = !!p.scheduled_at && new Date(p.scheduled_at).getTime() > Date.now()
+  // Short, for the button: "Sat 28 Nov, 04:33" (UAE time)
+  const when = later
+    ? new Date(p.scheduled_at!).toLocaleString('en-GB', { timeZone: 'Asia/Dubai', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : ''
+  const where = byApp ? `${p.visibility === 'PUBLIC' ? 'publicly' : 'to connections'} on ${connection!.name}’s LinkedIn` : ''
+  const byHandWhy = p.manual ? 'This format is posted on LinkedIn by hand' : 'The app can’t post to this account yet (company pages need LinkedIn’s approval first)'
+  const note = p.by_hand
+    ? later
+      ? `${byHandWhy}. Schedule it and you’ll be reminded at that time to copy the text and post it; Publish now copies the text straight away.`
+      : `${byHandWhy}: Publish copies the text for you to paste on LinkedIn, then you mark it as posted.`
+    : !connection
+      ? 'This account isn’t connected to LinkedIn.'
+      : connection.expired
+        ? 'The LinkedIn connection has expired. Reconnect it under your picture → LinkedIn connections to publish from here.'
+        : waitMins !== null
+          ? `LinkedIn asked the app to wait. Publishing is possible again in about ${waitMins} min.`
+          : later
+            ? `It goes out ${where}. The time is UAE time${tz.zone !== 'Asia/Dubai' ? ` (${tz.dual(p.scheduled_at!)})` : ''}; until then you can still edit or unschedule it.`
+            : `Publish posts it ${where} right away. To remove it afterwards you’d delete it on LinkedIn itself.`
+  const blocked = !p.by_hand && !!connection && (connection.expired || waitMins !== null)
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-x-hidden overflow-y-auto sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Preview</DialogTitle>
+          <DialogDescription>
+            Check it as it will appear on LinkedIn.
+          </DialogDescription>
+        </DialogHeader>
+        <FeedPreview
+          accountName={accountName}
+          caption={p.caption}
+          format={p.format}
+          details={p.details ?? {}}
+          imageSrc={p.has_image ? api.plannedImageUrl(p.id, p.approved_at ?? p.id.toString()) : null}
+        />
+        <p className="rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">{note}</p>
+        <DialogFooter className="flex-wrap gap-2">
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Cancel
+          </Button>
+          <Button variant="outline" onClick={onEdit} disabled={busy}>
+            <Pencil /> Edit
+          </Button>
+          {later ? (
+            <>
+              <Button variant="outline" onClick={() => onPublish(byApp ? 'now' : 'copy')} disabled={busy || blocked}>
+                <Send /> Publish now
+              </Button>
+              <Button onClick={() => onPublish('scheduled')} disabled={busy}>
+                <CalendarClock /> {busy ? 'Saving…' : `Schedule ${when}`}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => onPublish(byApp ? 'now' : 'copy')} disabled={busy || blocked}>
+              <Send /> {busy ? 'Publishing…' : 'Publish'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -22,8 +22,8 @@ import { FORMAT_LABELS, fmtNumber, fmtPct } from '@/lib/format'
 
 /** LinkedIn-style tabs: by where the data comes from. Founders' profiles have no visitor data. */
 const TABS = [
+  { value: 'analytics', label: 'Analytics' },
   { value: 'posts', label: 'Posts' },
-  { value: 'content', label: 'Content' },
   { value: 'visitors', label: 'Visitors', companyOnly: true },
   { value: 'followers', label: 'Followers' },
 ] as const
@@ -31,9 +31,10 @@ const TABS = [
 /** Old links (?tab=timing etc.) still land in the right place */
 const LEGACY: Record<string, string> = {
   rankings: 'posts',
-  formats: 'content',
-  timing: 'content',
-  consistency: 'content',
+  content: 'analytics', // the tab was called Content
+  formats: 'analytics',
+  timing: 'analytics',
+  consistency: 'analytics',
   audience: 'followers',
 }
 
@@ -75,9 +76,9 @@ export function DataPage() {
   const checkpoint: CheckpointQ = probe?.suggested_checkpoint ?? '24h'
   const [params, setParams] = useSearchParams()
 
-  const raw = params.get('tab') ?? 'posts'
+  const raw = params.get('tab') ?? 'analytics'
   const tabRaw = LEGACY[raw] ?? raw
-  const tab = tabs.some((t) => t.value === tabRaw) ? tabRaw : 'posts'
+  const tab = tabs.some((t) => t.value === tabRaw) ? tabRaw : 'analytics'
   const setTab = (v: string) => setParams((p) => { p.set('tab', v); p.delete('view'); return p }, { replace: true })
 
   // Time range: like LinkedIn's own analytics, kept in the address so it can be shared
@@ -153,7 +154,7 @@ export function DataPage() {
         <EmptyState>
           {daily.length ? 'Pick a start and end date to see this period.' : <>No LinkedIn data yet. <Link to="/import" className="underline">Import LinkedIn’s export</Link> to see how the account is doing.</>}
         </EmptyState>
-      ) : tab === 'content' ? (
+      ) : tab === 'analytics' ? (
         <div className="space-y-4">
           <Highlights
             dates={dates}
@@ -207,7 +208,7 @@ function ContentSummary({ periodPosts, allPosts }: { periodPosts: Post[]; allPos
   const ranked = periodPosts.filter((p) => postImpressions(p) != null).sort((a, b) => (postImpressions(b) ?? 0) - (postImpressions(a) ?? 0))
   if (!periodPosts.length) return <>No posts went out in this period, so these numbers come from older posts still being seen.</>
   const best = ranked[0]
-  const title = best && (best.caption?.split('\n').find((l) => l.trim())?.trim() || best.topic || `Post #${best.id}`)
+  const title = best && (best.caption?.split('\n').find((l) => l.trim())?.trim() || best.topic || best.ref || `Post ${best.id}`)
   const ratio = best && typical ? (postImpressions(best) ?? 0) / typical : null
   return (
     <>

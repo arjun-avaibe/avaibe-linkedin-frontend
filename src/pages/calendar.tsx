@@ -12,8 +12,8 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns'
-import { CalendarClock, ChevronLeft, ChevronRight, CircleAlert, Clock, Plus, X } from 'lucide-react'
-import { PageHeader } from '@/components/common'
+import { CalendarClock, ChevronLeft, ChevronRight, CircleAlert, Clock, Pencil, Plus, X } from 'lucide-react'
+import { PageHeader, PostRef } from '@/components/common'
 import { todayUae, ymd } from '@/components/period'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -62,6 +62,8 @@ const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const covers = (i: CalendarItem, day: string) => i.start <= day && day <= i.end
 const postFormat = (f: string) => (FORMAT_LABELS as Record<string, string>)[f] ?? f
 const plannedFormat = (f: string) => (PLANNED_FORMAT_LABELS as Record<string, string>)[f] ?? f
+/** Planned posts are either unpublished or scheduled (stored as "approved") until they're published */
+const plannedStatus = (s: string) => ({ draft: 'unpublished', approved: 'scheduled', publishing: 'publishing' })[s] ?? s
 
 /* ------------------------------------------------------------------ page */
 
@@ -133,23 +135,26 @@ export function CalendarPage() {
         eyebrow="Content"
         title="Calendar"
         description="Your posts, planned posts, holidays and events in one view. Click a day to see what to keep in mind and to plan a post for it."
-        actions={
-          <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon-sm" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
-              <ChevronLeft />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setMonth(parseISO(today))}>
-              Today
-            </Button>
-            <Button variant="outline" size="icon-sm" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>
-              <ChevronRight />
-            </Button>
-          </div>
-        }
       />
 
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-        <h2 className="text-lg font-semibold">{format(month, 'MMMM yyyy')}</h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+        {/* Month switcher: the arrows sit on either side of the month they change */}
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon-sm" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
+            <ChevronLeft />
+          </Button>
+          <h2 className="w-40 text-center text-lg font-semibold tabular-nums" aria-live="polite">
+            {format(month, 'MMMM yyyy')}
+          </h2>
+          <Button variant="ghost" size="icon-sm" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>
+            <ChevronRight />
+          </Button>
+          {!isSameMonth(month, parseISO(today)) && (
+            <Button variant="outline" size="sm" className="ml-2" onClick={() => setMonth(parseISO(today))}>
+              Back to this month
+            </Button>
+          )}
+        </div>
         {data && (
           <p className="text-sm text-muted-foreground">
             <b className="text-foreground tabular-nums">{own.length}</b> {own.length === 1 ? 'post' : 'posts'} by {account.name}
@@ -177,7 +182,7 @@ export function CalendarPage() {
 
       <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="overflow-x-auto">
-          <div className="min-w-[700px] overflow-hidden rounded-2xl border bg-card shadow-sm">
+          <div className="min-w-[520px] overflow-hidden rounded-2xl border bg-card shadow-sm">
             <div className="grid grid-cols-7 border-b bg-muted/40 text-xs font-medium text-muted-foreground">
               {WEEKDAYS.map((w, i) => (
                 <div key={w} className={cn('px-2 py-2', i >= 5 && 'text-muted-foreground/70')}>
@@ -362,7 +367,7 @@ function DayCell({
     ...planned.map((p) => (
       <div
         key={`pl-${p.id}`}
-        title={`Planned (${p.status}): ${p.title}`}
+        title={`Planned (${plannedStatus(p.status)}): ${p.title}`}
         className="flex items-center gap-1 truncate rounded border border-dashed border-foreground/40 px-1 text-[11px] leading-4"
       >
         <span className="shrink-0 tabular-nums">{p.time}</span>
@@ -438,12 +443,12 @@ function DayPanel({
   canPlan: boolean
   onClose: () => void
 }) {
+  const canEdit = useAuth().can('editor')
   const items = data.items.filter((i) => covers(i, day))
   const posts = data.posts.filter((p) => p.date === day)
   const planned = data.planned.filter((p) => p.date === day)
   const advice = dayAdvice(day, items, data, isPast)
   const adv = data.timing.ready ? data.timing.days[day] : undefined
-  const isProven = !!adv && proven(data, adv)
   // A proven best slot if there is one; otherwise the slot that's slightly ahead so far
   const start = (adv && SLOT_START[adv.best_slot]) || '10:00'
   const newAt = new Date(`${day}T${start}:00+04:00`).toISOString()
@@ -506,6 +511,7 @@ function DayPanel({
           return (
             <Link key={p.id} to={`/posts/${p.id}`} className="block rounded-lg border px-2.5 py-2 hover:bg-accent/40">
               <div className="text-xs text-muted-foreground">
+                {p.ref && <PostRef id={p.ref} className="mr-1.5" />}
                 {p.account_id === accountId ? 'Our post' : p.account_name} · {postFormat(p.format)}
                 {p.time && ` · ${p.time}`}
               </div>
@@ -518,32 +524,31 @@ function DayPanel({
             </Link>
           )
         })}
-        {planned.map((p) => (
-          <Link key={`pl-${p.id}`} to="/publishing" className="block rounded-lg border border-dashed px-2.5 py-2 hover:bg-accent/40">
-            <div className="text-xs text-muted-foreground">
-              Planned · {plannedFormat(p.format)} · {p.time} · {p.status}
+        {planned.map((p) => {
+          const editable = canEdit && p.status !== 'publishing'
+          return (
+            <div key={`pl-${p.id}`} className="flex items-start gap-2 rounded-lg border border-dashed px-2.5 py-2">
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-muted-foreground">
+                  <PostRef id={p.ref} className="mr-1.5" />
+                  {plannedFormat(p.format)} · {p.time} · {plannedStatus(p.status)}
+                </div>
+                <div className="mt-0.5 line-clamp-2 text-[13px]">{p.title}</div>
+              </div>
+              {editable && (
+                <Link to={`/create/${p.id}?from=calendar`} className={cn(buttonVariants({ variant: 'outline', size: 'xs' }), 'shrink-0')}>
+                  <Pencil /> Edit
+                </Link>
+              )}
             </div>
-            <div className="mt-0.5 line-clamp-2 text-[13px]">{p.title}</div>
-          </Link>
-        ))}
+          )
+        })}
       </div>
 
       {canPlan && (
-        <Link to={`/create?new_at=${encodeURIComponent(newAt)}`} className={cn(buttonVariants({ size: 'sm' }), 'mt-4 w-full')}>
+        <Link to={`/create?new_at=${encodeURIComponent(newAt)}&from=calendar`} className={cn(buttonVariants({ size: 'sm' }), 'mt-4 w-full')}>
           <Plus /> Plan a post for this day
         </Link>
-      )}
-      {canPlan && (
-        <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-          Starts a draft at {start} UAE{adv ? (isProven ? ', the best time for this date' : ', slightly ahead so far (not proven)') : ''}. You can
-          change it.
-        </p>
-      )}
-      {!isPast && (
-        <p className="mt-3 text-[11px] text-muted-foreground">
-          Time advice comes from this account’s past posts, after allowing for format, topic and page growth, and counts holidays and Ramadan.{' '}
-          The same advice appears when you create or edit a post in Publishing.
-        </p>
       )}
     </div>
   )

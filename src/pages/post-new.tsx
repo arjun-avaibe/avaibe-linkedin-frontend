@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/common'
@@ -14,7 +14,20 @@ export function NewPostPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader eyebrow="Data" title="Add post" description={`Record a post published on ${account.name}. You'll add performance snapshots next.`} />
+      <PageHeader
+        eyebrow="Data"
+        back="/data?tab=posts"
+        title="Log post"
+        description={
+          <>
+            Already posted on LinkedIn? Record it here to track its numbers on {account.name}. To write a new post, use{' '}
+            <Link to="/create" className="underline underline-offset-2">
+              Create post
+            </Link>
+            .
+          </>
+        }
+      />
       <Card>
         <CardContent>
           <PostForm

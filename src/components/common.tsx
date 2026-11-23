@@ -1,30 +1,53 @@
 import type { ReactNode } from 'react'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronRight, HelpCircle, Sparkles, type LucideIcon } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight, ChevronRight, HelpCircle, Sparkles, type LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { Classification, Shares, Trend } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
+/** Back to the page the person came from; if they opened this page directly (no earlier page in the app), go to `fallback` */
+export function BackButton({ fallback }: { fallback: string }) {
+  const navigate = useNavigate()
+  const location = useLocation()
+  return (
+    <button
+      type="button"
+      onClick={() => (location.key !== 'default' ? navigate(-1) : navigate(fallback))}
+      className="mr-1 inline-flex items-center gap-1 rounded-full bg-card px-2.5 py-1 text-xs font-medium text-foreground ring-1 ring-border transition-colors hover:bg-muted"
+    >
+      <ArrowLeft className="size-3.5" /> Back
+    </button>
+  )
+}
+
 /** Page title, as on Create post: a breadcrumb (section › page), a large bold title and one line of description */
-export function PageHeader({ title, description, actions, eyebrow }: {
+export function PageHeader({ title, description, actions, eyebrow, back }: {
   title: string
   description?: ReactNode
   actions?: ReactNode
   /** The sidebar section this page sits in; shown as a breadcrumb */
   eyebrow?: string
+  /** Pages reached from another page (not the sidebar) get a Back button; this is where it goes if there's no page to go back to */
+  back?: string
 }) {
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        {eyebrow && eyebrow !== title && (
+        {((eyebrow && eyebrow !== title) || back) && (
           <nav aria-label="Breadcrumb" className="mb-1 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <span>{eyebrow}</span>
-            <ChevronRight className="size-3.5" />
-            <span className="text-foreground">{title}</span>
+            {back && <BackButton fallback={back} />}
+            {eyebrow && eyebrow !== title && (
+              <>
+                <span>{eyebrow}</span>
+                <ChevronRight className="size-3.5" />
+                <span className="text-foreground">{title}</span>
+              </>
+            )}
           </nav>
         )}
-        <h1 className="text-[28px] leading-tight font-bold tracking-tight">{title}</h1>
+        <h1 className="text-[32px] leading-tight font-semibold tracking-tight">{title}</h1>
         {description && <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{description}</p>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -214,5 +237,15 @@ export function SimpleSelect({ value, onChange, options, label, className }: {
         </SelectContent>
       </Select>
     </label>
+  )
+}
+
+/** A post's readable ID (P-0042), the same on Publishing, Calendar, Data and the post page */
+export function PostRef({ id, className }: { id: string | null | undefined; className?: string }) {
+  if (!id) return null
+  return (
+    <span className={cn('inline-flex shrink-0 items-center rounded-md bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium text-muted-foreground tabular-nums', className)}>
+      {id}
+    </span>
   )
 }

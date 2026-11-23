@@ -54,7 +54,7 @@ export function LinkedInPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-4">
-      <PageHeader eyebrow="Connections" title="LinkedIn" description="Which LinkedIn accounts the app can post to, and what the LinkedIn app is allowed to do." />
+      <PageHeader eyebrow="Connections" back="/" title="LinkedIn" description="Which LinkedIn accounts the app can post to, and what the LinkedIn app is allowed to do." />
 
       {config && !config.configured && (
         <div className="rounded-lg border border-warn/50 bg-warn/10 px-4 py-3 text-sm">

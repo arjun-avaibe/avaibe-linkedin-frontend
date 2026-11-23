@@ -5,6 +5,7 @@ import { BellRing, ChevronRight, Eye, Info, MapPin, MousePointerClick, Trophy, U
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CardHeading, EmptyState, PageHeader } from '@/components/common'
+import { FormatsCard, ResultsCard, RhythmCard } from '@/components/dashboard-charts'
 import { engagementOf, Mini, pt, rel, totals, useSortedDaily, usePeriod, type Change } from '@/components/period'
 import { inRange, TimeRangePicker, type TimeRange } from '@/components/time-range'
 import { useAccount } from '@/context/account'
@@ -35,6 +36,9 @@ export function DashboardPage() {
   // This period vs the previous one (same days only, so days LinkedIn hasn't reported don't count against it)
   const { win, stats } = usePeriod(daily, range)
   const founders = accounts.filter((a) => a.parent_id != null && a.parent_id === id)
+  // Posts at the age most of them have, so formats are compared like with like
+  const { data: probe } = useOverview(id, '24h')
+  const { data: posts = [] } = usePosts(id, { checkpoint: probe?.suggested_checkpoint ?? '24h' })
 
   const uae = useMemo(() => {
     const latest = (aud: 'followers' | 'visitors') =>
@@ -127,6 +131,13 @@ export function DashboardPage() {
               />
             )}
           </div>
+
+          {/* Things the Data page doesn't show: how steady the posting is, which formats get seen, what attention turned into */}
+          <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
+            <RhythmCard posts={posts} />
+            <FormatsCard posts={posts} range={range} checkpoint={probe?.suggested_checkpoint ?? '24h'} />
+            <ResultsCard cur={stats.cur} prev={stats.prev} company={account?.kind === 'company'} />
+          </div>
         </>
       )}
 
@@ -148,7 +159,9 @@ export function DashboardPage() {
         </div>
         <div className="space-y-4">
           {account?.kind === 'company' && <AudienceCard audience={audience} followersLink={dataLink('followers')} visitorsLink={dataLink('visitors')} />}
-          <Attention accountId={id} />
+          <div id="tasks" className="scroll-mt-6">
+            <Attention accountId={id} />
+          </div>
         </div>
       </div>
 
@@ -169,7 +182,7 @@ function Kpi({ to, icon: Icon, label, value, change, note }: { to: string; icon:
             <Icon className="size-4 shrink-0 text-primary" aria-hidden />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-3xl font-bold tracking-tight tabular-nums">{value}</span>
+            <span className="text-[34px] leading-none font-medium tracking-tight tabular-nums">{value}</span>
             <ChangePill c={change} />
           </div>
           <div className="mt-1 text-xs text-muted-foreground">{note}</div>
@@ -391,7 +404,7 @@ function BestPosts({ accountId, range }: { accountId?: number; range: TimeRange 
                   <tr key={p.id} className="border-b last:border-0">
                     <td className="py-3 pr-3">
                       <Link to={`/posts/${p.id}`} className="block truncate font-medium hover:underline">
-                        {p.caption?.split('\n')[0] || p.topic || `Post #${p.id}`}
+                        {p.caption?.split('\n')[0] || p.topic || p.ref || `Post ${p.id}`}
                       </Link>
                     </td>
                     <td className="truncate px-2 py-3 text-xs text-muted-foreground">{FORMAT_LABELS[p.format]}</td>

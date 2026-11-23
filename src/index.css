@@ -1,18 +1,18 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
+@import "@fontsource-variable/geist";
 
-/* Product theme: monochrome and calm. White / grey surfaces, black primary (white in dark mode),
-   colour only where it carries meaning (good / bad / warning, chart series).
+/* Product theme: warm and calm. Warm off-white page, white cards without borders, one coral accent,
+   very round shapes (pill buttons and inputs, round icon buttons), colour only where it carries meaning.
    Light is the default; dark and "system" are in the profile menu → Appearance.
-   The accent is one token (--primary / --brand): change it here to re-brand the whole app. */
+   The accent is one palette (--a-*): change it here to re-brand the whole app. */
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
     --font-heading: var(--font-sans);
-    --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-sans: 'Geist Variable', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -66,53 +66,36 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ------------------------------------------------------------------ accent palettes
-   One accent colour drives buttons, the active menu item, links, focus rings and the main chart series.
-   Chosen in the profile menu → Appearance → Accent colour (stored per browser, set on <html data-accent>). */
-:root,
-:root[data-accent="indigo"] {
-    --a-50: #eef2ff; --a-100: #e0e7ff; --a-200: #c7d2fe; --a-300: #a5b4fc; --a-400: #818cf8;
-    --a-500: #6366f1; --a-600: #4f46e5; --a-700: #4338ca; --a-800: #3730a3; --a-900: #312e81;
-}
-:root[data-accent="blue"] {
-    --a-50: #eff6ff; --a-100: #dbeafe; --a-200: #bfdbfe; --a-300: #93c5fd; --a-400: #60a5fa;
-    --a-500: #3b82f6; --a-600: #2563eb; --a-700: #1d4ed8; --a-800: #1e40af; --a-900: #1e3a8a;
-}
-:root[data-accent="teal"] {
-    --a-50: #f0fdfa; --a-100: #ccfbf1; --a-200: #99f6e4; --a-300: #5eead4; --a-400: #2dd4bf;
-    --a-500: #14b8a6; --a-600: #0d9488; --a-700: #0f766e; --a-800: #115e59; --a-900: #134e4a;
-}
-:root[data-accent="violet"] {
-    --a-50: #f5f3ff; --a-100: #ede9fe; --a-200: #ddd6fe; --a-300: #c4b5fd; --a-400: #a78bfa;
-    --a-500: #8b5cf6; --a-600: #7c3aed; --a-700: #6d28d9; --a-800: #5b21b6; --a-900: #4c1d95;
-}
-:root[data-accent="rose"] {
-    --a-50: #fff1f2; --a-100: #ffe4e6; --a-200: #fecdd3; --a-300: #fda4af; --a-400: #fb7185;
-    --a-500: #f43f5e; --a-600: #e11d48; --a-700: #be123c; --a-800: #9f1239; --a-900: #881337;
+/* ------------------------------------------------------------------ accent: coral
+   Drives buttons, the active menu item, links, focus rings and the main chart series.
+   600 is the button colour: white text on it passes 4.5:1. 500 is the main chart series. */
+:root {
+    --a-50: #fdf2ee; --a-100: #fbe2d9; --a-200: #f6c4b3; --a-300: #efa086; --a-400: #e77d5c;
+    --a-500: #d9542f; --a-600: #c4482a; --a-700: #a63c23; --a-800: #85311e; --a-900: #6b291b;
 }
 
 /* ------------------------------------------------------------------ light (default) */
 :root {
-    /* Airy light design: near-white page with a hint of the accent, white cards, soft slate text */
-    --background: color-mix(in oklab, var(--a-50) 35%, #fbfbfd);
-    --foreground: #2a2f3a;
+    /* Warm off-white page, white cards, near-black text */
+    --background: #f3f2f0;
+    --foreground: #1f1e1c;
     --card: #ffffff;
-    --card-foreground: #2a2f3a;
+    --card-foreground: #1f1e1c;
     --popover: #ffffff;
-    --popover-foreground: #2a2f3a;
+    --popover-foreground: #1f1e1c;
     --primary: var(--a-600);
     --primary-foreground: #ffffff;
-    --secondary: #f1f3f7;
-    --secondary-foreground: #2a2f3a;
-    --muted: #f3f4f8;
-    --muted-foreground: #737a89;
+    --secondary: #f1efec;
+    --secondary-foreground: #1f1e1c;
+    --muted: #f5f4f2;
+    --muted-foreground: #74706a;
     --accent: var(--a-50);
     --accent-foreground: var(--a-700);
     --destructive: #dc2626;
-    --border: #eaecf1;
-    --input: #e3e6ed;
+    --border: #ebe8e4;
+    --input: #e2dfda;
     --ring: var(--a-400);
-    --radius: 0.625rem;
+    --radius: 1rem;
 
     --brand: var(--a-600);
     --brand-fg: var(--a-700);
@@ -134,11 +117,11 @@
     --chart-previous: #64748b;
 
     /* Chart series: the main series uses the accent; others are distinct, calm hues */
-    --chart-1: var(--a-500);
-    --chart-2: #14b8a6;
-    --chart-3: #f59e0b;
-    --chart-4: #94a3b8;
-    --chart-5: #cbd5e1;
+    --chart-1: #d9542f;
+    --chart-2: #0d9488;
+    --chart-3: #b7791f;
+    --chart-4: #4f5bd5;
+    --chart-5: #a0527d;
 
     /* Heatmap ramp in the accent, low -> high */
     --seq-1: var(--a-50);
@@ -161,13 +144,14 @@
     --cal-aware: #be185d;
     --cal-biz: #64748b;
 
-    --sidebar: #ffffff;
-    --sidebar-foreground: #545b6b;
+    /* The sidebar sits on the page colour; the active item is a white pill with coral text */
+    --sidebar: #f3f2f0;
+    --sidebar-foreground: #55524c;
     --sidebar-primary: var(--a-600);
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: var(--a-50);
+    --sidebar-accent: #ffffff;
     --sidebar-accent-foreground: var(--a-700);
-    --sidebar-border: #eceef3;
+    --sidebar-border: #e6e3de;
     --sidebar-ring: var(--a-400);
 }
 
@@ -213,11 +197,11 @@
 
     --chart-current: var(--a-500);
     --chart-previous: #7d8ba1;
-    --chart-1: var(--a-400);
-    --chart-2: #2dd4bf;
-    --chart-3: #fbbf24;
-    --chart-4: #94a3b8;
-    --chart-5: #475569;
+    --chart-1: #e0623a;
+    --chart-2: #139e8f;
+    --chart-3: #b07a1e;
+    --chart-4: #6e78e3;
+    --chart-5: #c4588a;
 
     --seq-1: color-mix(in oklab, var(--a-500) 10%, #1b1e25);
     --seq-2: color-mix(in oklab, var(--a-500) 22%, #1b1e25);
@@ -268,7 +252,7 @@
 /* Cards: white on the soft grey page, hairline border and a very light shadow */
 [data-slot="card"] {
   background: var(--card);
-  box-shadow: 0 0 0 1px var(--border), 0 1px 3px rgba(16, 24, 40, 0.05);
+  box-shadow: none;
   --tw-ring-color: transparent;
 }
 .dark [data-slot="card"] {

@@ -290,10 +290,16 @@ export interface PlannedDetails {
 
 export interface PlannedPost {
   id: number
+  /** Readable post ID (P-0042), kept when the post is published and tracked in Data */
+  ref: string | null
   account_id: number
   format: PlannedFormat
+  /** Empty for drafts made before goals existed */
+  goal: PostGoal | null
   /** Posted by hand (carousel, video, article, poll): the app can't publish these yet */
   manual: boolean
+  /** Posted by hand: a hand-posted format, or an account the app can't post to yet */
+  by_hand: boolean
   details: PlannedDetails
   has_media: boolean
   media_name: string | null
@@ -328,11 +334,21 @@ export interface PlannedPostInput {
   image_alt: string | null
   visibility: 'PUBLIC' | 'CONNECTIONS'
   scheduled_at: string | null // ISO 8601 with offset/UTC
+  goal: PostGoal
   topic: string | null
   industry: string | null
   cta: string | null
   keywords: string[]
 }
+
+/** What a post aims for (required on Create post) */
+export type PostGoal = 'brand' | 'leads' | 'sales' | 'engagement'
+export const POST_GOALS: { value: PostGoal; label: string; hint: string }[] = [
+  { value: 'brand', label: 'Brand', hint: 'Brand awareness: get AVAIBE known to the right people in the UAE' },
+  { value: 'leads', label: 'Leads', hint: 'Bring in enquiries: comments, DMs, demo requests' },
+  { value: 'sales', label: 'Sales', hint: 'Move people already talking to AVAIBE towards a deal' },
+  { value: 'engagement', label: 'Engagement', hint: 'Start conversations and grow the community' },
+]
 
 export interface Account {
   id: number
@@ -367,6 +383,8 @@ export type Snapshot = {
 
 export interface PostSummary {
   id: number
+  /** Readable post ID (P-0042): the same one the post had as a draft */
+  ref: string | null
   account_id: number
   post_url: string | null
   linkedin_post_id: string | null
@@ -683,14 +701,32 @@ export interface ExportFileResult {
   demographic_status?: 'new' | 'changed' | 'unchanged'
 }
 
-/** Create post → Analyse: Claude's suggestions for one draft (only ever runs on click) */
+/** Analyse → a prompt for an outside image/video tool (Seedance, Seedream…) */
+export interface VisualPrompt {
+  prompt: string
+  settings: string[]
+  tips: string[]
+}
+export interface CarouselPrompts {
+  document_title: string
+  style: string
+  slides: { headline: string; body: string; prompt: string }[]
+  tips: string[]
+}
+/** The parts of a post Analyse can review (picked after clicking Analyse) */
+export type AnalysePart = 'text' | 'visual' | 'timing' | 'poll'
+
+/** Create post → Analyse: Claude's suggestions for one draft (only ever runs on click).
+    Each review is filled only for the parts of the post the team picked. */
 export interface PostAssistResult {
-  improved_text: string
-  what_changed: string[]
-  image_prompt: string | null
-  quick_fixes: { kind: 'hashtags' | 'shorter' | 'cta'; title: string; text: string }[]
-  competitor_insights: string[]
-  content_ideas: { title: string; angle: string; format: PlannedFormat }[]
+  text: {
+    improved_text: string
+    what_changed: string[]
+    quick_fixes: { kind: 'hashtags' | 'shorter' | 'cta'; title: string; text: string }[]
+  } | null
+  visual: { notes: string[]; prompt: VisualPrompt | null; slide_prompts: CarouselPrompts | null } | null
+  timing: { verdict: string; suggestions: string[]; suggested_time: string | null } | null
+  poll: { question: string; options: string[]; notes: string[] } | null
   cautions: string[]
 }
 
@@ -713,15 +749,6 @@ export interface ChatTurn {
   /** When web search was on for that message: the pages it drew on */
   sources?: { title: string; url: string }[]
   searches?: number
-}
-
-/** Create post → Generate with AI (image AI, provider plugged in on the server) */
-export type ImageShape = 'square' | 'portrait' | 'landscape'
-export interface GeneratedImages {
-  run_id: number
-  provider: string
-  cost_usd: number
-  images: { url: string }[]
 }
 
 /** When each LinkedIn export type was last imported for an account */
@@ -784,6 +811,7 @@ export interface CalendarItem {
 
 export interface CalendarPost {
   id: number
+  ref: string | null
   account_id: number
   account_name: string
   account_kind: string
@@ -798,6 +826,7 @@ export interface CalendarPost {
 
 export interface CalendarPlanned {
   id: number
+  ref: string | null
   date: string
   time: string
   slot: string
@@ -1007,7 +1036,8 @@ export const api = {
   createPlanned: (body: PlannedPostInput) => request<PlannedPost>('POST', '/planner', { body }),
   updatePlanned: (id: number, body: PlannedPostInput) => request<PlannedPost>('PUT', `/planner/${id}`, { body }),
   deletePlanned: (id: number) => request<void>('DELETE', `/planner/${id}`),
-  plannedAction: (id: number, action: 'approve' | 'unapprove' | 'publish') => request<PlannedPost>('POST', `/planner/${id}/${action}`),
+  plannedAction: (id: number, action: 'approve' | 'unapprove' | 'publish', body?: { now?: boolean }) =>
+    request<PlannedPost>('POST', `/planner/${id}/${action}`, body ? { body } : {}),
   uploadPlannedImage: (id: number, file: File) => {
     const form = new FormData()
     form.append('file', file)
@@ -1040,7 +1070,7 @@ export const api = {
   postAssistStatus: (accountId: number) =>
     request<{ configured: boolean; runs_today: number; daily_limit: number }>('GET', '/ai/post-assist', { params: { account_id: accountId } }),
   postAssist: (
-    body: { account_id: number; format: string; caption: string; topic: string | null; industry: string | null; cta: string | null; instructions: string | null },
+    body: { account_id: number; format: string; caption: string; topic: string | null; industry: string | null; cta: string | null; goal?: PostGoal | null; focus: AnalysePart[]; scheduled_at: string | null; details: PlannedDetails; media_attached: boolean },
     attachment?: File | null,
   ) => request<PostAssistRun>('POST', '/ai/post-assist', attachment ? { form: toForm(body, attachment) } : { body }),
   postChatStatus: (accountId: number) =>
@@ -1052,17 +1082,11 @@ export const api = {
     topic: string | null
     industry: string | null
     cta: string | null
+    goal?: PostGoal | null
     messages: { role: 'user' | 'assistant'; content: string }[]
     web_search?: boolean
   }, attachment?: File | null) =>
     request<Omit<PostAssistRun, 'result'> & { result: ChatTurn }>('POST', '/ai/post-chat', attachment ? { form: toForm(body, attachment) } : { body }),
-  writeCarousel: (body: { account_id: number; caption: string; topic: string | null; industry: string | null; cta: string | null; instructions: string | null; slide_count: number }) =>
-    request<Omit<PostAssistRun, 'result'> & { result: { document_title: string; visual_style: string; slides: { headline: string; body: string }[] } }>('POST', '/ai/carousel', { body }),
-  imageStatus: (accountId: number) =>
-    request<{ configured: boolean; provider: string | null; price_per_image: number | null; images_today: number; daily_limit: number }>('GET', '/images/status', { params: { account_id: accountId } }),
-  generateImages: (body: { account_id: number; prompt: string; shape: ImageShape; count: number }) => request<GeneratedImages>('POST', '/images/generate', { body }),
-  generateSlide: (body: { account_id: number; style: string; headline: string; body: string; index: number; total: number }) =>
-    request<GeneratedImages>('POST', '/images/slide', { body }),
   lastImports: (accountId: number) => request<LastImports>('GET', `/accounts/${accountId}/last-imports`),
   pageDaily: (accountId: number) => request<PageDay[]>('GET', `/accounts/${accountId}/page-daily`),
 }

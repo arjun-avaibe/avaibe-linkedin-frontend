@@ -35,7 +35,7 @@ function SignedInProfile() {
   const u = auth.user!
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <PageHeader eyebrow="Your account" title="Profile" description="Your details come from your AVAIBE Microsoft account." />
+      <PageHeader eyebrow="Your account" back="/" title="Profile" description="Your details come from your AVAIBE Microsoft account." />
       <Section icon={UserRound} title="Details">
         <dl className="grid gap-4 text-sm sm:grid-cols-2">
           <div>
@@ -90,7 +90,7 @@ function LocalProfile() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <PageHeader eyebrow="Your account" title="Profile" description="Your details and personal preferences." />
+      <PageHeader eyebrow="Your account" back="/" title="Profile" description="Your details and personal preferences." />
 
       <div className="flex items-start gap-3 rounded-lg border border-info/30 bg-info/5 px-4 py-3 text-sm">
         <Info className="mt-0.5 size-4 shrink-0 text-info-fg" />

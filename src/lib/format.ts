@@ -1,12 +1,12 @@
 import type { PostFormat } from './api'
 
 export const FORMAT_LABELS: Record<PostFormat, string> = {
-  image: 'Single image / poster',
-  carousel: 'PDF carousel',
+  image: 'Image',
+  carousel: 'Carousel',
   video: 'Video',
   poll: 'Poll',
-  newsletter: 'Newsletter / article',
-  text: 'Text post',
+  newsletter: 'Article',
+  text: 'Text',
   untagged: 'Not tagged yet',
 }
 
