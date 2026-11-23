@@ -11,9 +11,7 @@ export function SignInPage() {
   const error = params.get('error')
   const detail = params.get('message')
 
-  // Already signed in (for real, or through the demo screen in local mode): go to the app
   if (!isLoading && (enabled ? signedIn : !!demoEmail) && !params.get('signed_out')) return <Navigate to="/" replace />
-  // Local mode: the demo sign-in screen
   if (!isLoading && !enabled) return <DemoSignIn signedOut={!!params.get('signed_out')} />
 
   return (

@@ -29,7 +29,6 @@ export function ApproveDialog({
   const tz = useTz()
   const byApp = !p.by_hand && !!connection && !connection.expired
   const later = !!p.scheduled_at && new Date(p.scheduled_at).getTime() > Date.now()
-  // Short, for the button: "Sat 28 Nov, 04:33" (UAE time)
   const when = later
     ? new Date(p.scheduled_at!).toLocaleString('en-GB', { timeZone: 'Asia/Dubai', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
     : ''

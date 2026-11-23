@@ -1,4 +1,3 @@
-/** Brand: React Query hooks for the shared brand documents (competitors, page checklist) */
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { keys } from '@/hooks/queries'
 import { api, type AccountDocs } from '@/lib/api'

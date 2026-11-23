@@ -10,7 +10,6 @@ import { useAuth } from '@/context/auth'
 import { useSaveSettings } from '@/pages/settings/queries'
 import type { BrandSettings } from '@/lib/api'
 
-// Competitors are kept on Brand → Competitors now; their names are sent to Claude from there.
 type BrandList = 'services' | 'target_segments' | 'differentiators' | 'proof_points' | 'avoid' | 'languages'
 
 const BRAND_LISTS: { key: BrandList; label: string; hint: string; rows: number }[] = [
@@ -22,7 +21,6 @@ const BRAND_LISTS: { key: BrandList; label: string; hint: string; rows: number }
   { key: 'languages', label: 'Languages', hint: 'e.g. English, Arabic. Max 5.', rows: 2 },
 ]
 
-/** What the app (and Claude) knows about the brand. Saved for the whole workspace; admins can edit. */
 export function BrandKitForm({ current }: { current: BrandSettings }) {
   const save = useSaveSettings()
   const auth = useAuth()
@@ -37,7 +35,7 @@ export function BrandKitForm({ current }: { current: BrandSettings }) {
 
   const submit = () => {
     const body: BrandSettings = {
-      ...current, // keeps fields not shown here (e.g. the older competitors list)
+      ...current,
       company_summary: summary,
       website,
       voice,

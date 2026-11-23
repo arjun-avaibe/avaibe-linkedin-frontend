@@ -7,12 +7,10 @@ export type Draft = {
   industry: string
   cta: string
   goal: PostGoal | null
-  /** The chosen posting time (ISO), for Analyse → Posting time */
   scheduledAt?: string | null
   details?: PlannedDetails
 }
 
-/** The post's image or PDF (or video, which the AI can't read), new or saved earlier */
 export type Visual = {
   key: string
   name: string

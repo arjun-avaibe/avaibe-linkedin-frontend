@@ -1,7 +1,6 @@
 import { Clock } from 'lucide-react'
 import type { CalendarData } from '@/lib/api'
 
-/** One line above the grid: whether the best-time hints can be trusted yet */
 export function TimingNote({ data }: { data: CalendarData }) {
   const t = data.timing
   const text = !t.ready

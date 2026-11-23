@@ -27,7 +27,6 @@ export function ChatMode({
   const [entries, setEntries] = useState<ChatEntry[]>([])
   const [text, setText] = useState(initialText ?? '')
   const [cost, setCost] = useState(0)
-  // Off by default: each message with web search costs a little more (searches + a short research step)
   const [web, setWeb] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
   const status = usePostChatStatus(accountId)
@@ -56,7 +55,6 @@ export function ChatMode({
         },
         onError: (e) => {
           toast.error(e.message)
-          // Put an unsent message back in the box so nothing typed is lost
           const last = history.at(-1)
           if (last?.role === 'user') {
             setEntries(history.slice(0, -1))
@@ -65,7 +63,6 @@ export function ChatMode({
         },
       },
     )
-  // Braces matter: newer browsers return a Promise from scrollIntoView, and an effect must return nothing (or a clean-up function)
   useEffect(() => {
     bottom.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [entries.length, send.isPending])
@@ -86,14 +83,12 @@ export function ChatMode({
     setText('')
     sendChat(next)
   }
-  // Tapping an answer adds it to the reply box (one line per question), so several questions can be answered in one message
   const pick = (question: string, option: string) => {
     const lines = text.split('\n').filter((l) => l.trim() && !l.startsWith(`${question} →`))
     setText([...lines, `${question} → ${option}`].join('\n'))
   }
   const lastAssistant = [...entries].reverse().find((e) => e.role === 'assistant') as Extract<ChatEntry, { role: 'assistant' }> | undefined
 
-  // A question brought from the Dashboard skips the start screen: it waits in the reply box until sent
   if (!entries.length && !send.isPending && !initialText) {
     return (
       <div className="rounded-xl border border-dashed px-6 py-10 text-center">

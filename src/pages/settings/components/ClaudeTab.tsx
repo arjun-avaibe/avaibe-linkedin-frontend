@@ -12,8 +12,6 @@ export function ClaudeTab() {
   const u = data.usage
   return (
     <div className="space-y-4">
-    {/* What Claude needs that LinkedIn doesn't hold: voice, what to avoid, differentiators.
-        Page facts (About, website, specialties) will come from LinkedIn once the page API is connected. */}
     {settings.data ? (
       <BrandKitForm key={JSON.stringify(settings.data.current.brand)} current={settings.data.current.brand} />
     ) : (

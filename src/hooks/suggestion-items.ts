@@ -62,16 +62,12 @@ export const AREAS: { id: AreaId; label: string; icon: LucideIcon; intro: string
   },
 ]
 
-/** Areas with their own sidebar section (and suggestions page there), kept out of the shared Suggestions list */
-// Leads and Sales share one section (Leads & sales): one suggestions page shows both
 export const OWN_SECTION: Partial<Record<AreaId, string>> = { brand: '/brand', leads: '/leads', sales: '/leads' }
 
-/** Where an area's suggestions page lives */
 export function areaPath(area: AreaId): string {
   return OWN_SECTION[area] ? `${OWN_SECTION[area]}/suggestions` : `/suggestions/${area}`
 }
 
-/** Areas listed under Suggestions in the sidebar */
 export const SUGGESTION_AREAS = AREAS.filter((a) => !OWN_SECTION[a.id])
 
 const IDEA_AREA: Record<IdeaType, AreaId> = {
@@ -90,9 +86,7 @@ export interface Item {
   key: string
   area: AreaId
   title: string
-  /** One line shown on the collapsed card */
   summary: string
-  /** Lower = more important */
   rank: number
   rule?: Suggestion
   idea?: { idea: Idea; runId: number; index: number }
@@ -108,7 +102,6 @@ export function itemState(status: DecisionStatus | undefined): ItemState {
   return 'closed'
 }
 
-/** What to compare an item with: post-type ideas (by their text) and topic suggestions (by their topic). */
 function similarQuery(it: Item): { key: string; text: string; topic?: string | null } | null {
   if (it.rule?.topic) return { key: it.key, text: it.rule.title, topic: it.rule.topic }
   const idea = it.idea?.idea
@@ -118,7 +111,6 @@ function similarQuery(it: Item): { key: string; text: string; topic?: string | n
   return null
 }
 
-/** Past posts on the same topic as each item (only items that are about posts). */
 export function useSimilarPosts(accountId: number | undefined, items: Item[]) {
   const queries = items.map(similarQuery).filter((q): q is NonNullable<typeof q> => q !== null)
   return useQuery({
@@ -129,17 +121,14 @@ export function useSimilarPosts(accountId: number | undefined, items: Item[]) {
   })
 }
 
-/** Rule-based suggestions + the latest Claude ideas, sorted into areas, with the team's decisions attached. */
 export function useSuggestionItems(accountId: number | undefined) {
   const sugg = useSuggestions(accountId)
   const ideas = useIdeas(accountId)
   const decisions = useDecisions(accountId)
-  // Company-page setup items (Brand): shown until done
   const { accounts } = useAccount()
   const isCompany = accounts.find((a) => a.id === accountId)?.kind === 'company'
   const checklist = useAccountDoc(isCompany ? accountId : undefined, 'page_checklist')
   const posts = usePosts(accountId)
-  // Lead suggestions come from the Leads log (same cache as the Leads pages)
   const leads = useLeads(accountId)
 
   const items = useMemo(() => {
@@ -181,7 +170,6 @@ export function useSuggestionItems(accountId: number | undefined) {
         area: IDEA_AREA[idea.type] ?? 'content',
         title: idea.title,
         summary: idea.why.find((w) => !/^assumption:/i.test(w.trim())) ?? idea.what,
-        // Claude lists ideas best first; confidence breaks ties with rule-based items
         rank: LEVEL_RANK[idea.confidence] + 0.5 + index * 0.01,
         idea: { idea, runId: run.id, index },
         decision: byKey.get(key),
@@ -190,7 +178,6 @@ export function useSuggestionItems(accountId: number | undefined) {
     return out.sort((a, b) => a.rank - b.rank)
   }, [sugg.data, ideas.data, decisions.data, isCompany, checklist.data, posts.data, leads.data])
 
-  /** Items still needing attention (open or in progress), per area: the sidebar counts */
   const counts = useMemo(() => {
     const c = Object.fromEntries(AREAS.map((a) => [a.id, 0])) as Record<AreaId, number>
     for (const it of items) {

@@ -1,4 +1,3 @@
-/** Settings: React Query hooks for app settings, accounts and the team */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { keys } from '@/hooks/queries'
 import { api, type AppSettings, type TeamMemberInput } from '@/lib/api'
@@ -11,7 +10,6 @@ export function useClaudeStatus() {
   return useQuery({ queryKey: keys.claude, queryFn: api.claudeStatus })
 }
 
-/** Saving settings changes how every analysis is computed: refresh everything. */
 export function useSaveSettings() {
   const qc = useQueryClient()
   return useMutation({
@@ -34,13 +32,10 @@ export function useCreateAccount() {
   })
 }
 
-// ---- team
-
 export function useTeam() {
   return useQuery({ queryKey: keys.team, queryFn: api.team })
 }
 
-/** Team changes can change what the signed-in person may do: refresh the team and "who am I" */
 function useRefreshTeam() {
   const qc = useQueryClient()
   return () => {

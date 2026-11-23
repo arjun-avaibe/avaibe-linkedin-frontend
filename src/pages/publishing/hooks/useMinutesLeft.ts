@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 
-/** Whole minutes until `iso` (at least 1), re-rendering every 15 s; null once it has passed. */
 export function useMinutesLeft(iso: string | null): number | null {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {

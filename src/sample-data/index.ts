@@ -1,13 +1,3 @@
-/**
- * Sample data for building the screens without a backend (npm run dev).
- *
- * `sampleApi` has exactly the same functions as the backend client in lib/api.ts, but reads and changes data
- * kept in this browser (localStorage) instead of calling a server: no requests, no waiting. Changes survive a
- * reload; "Reset sample data" in the banner starts over. Everything here is invented; the AI and LinkedIn
- * features return ready-made answers.
- *
- * When the backend changes an endpoint, change its type in lib/api.ts: the type checker then points here.
- */
 import type {
   Account,
   AccountDoc,
@@ -43,11 +33,8 @@ const STORAGE_KEY = 'avaibe.sampleData'
 const ME_EMAIL = 'you@avaibe.example'
 const DEFAULTS = { segments: DEFAULT_SEGMENTS, performance: DEFAULT_PERFORMANCE, brand: DEFAULT_BRAND }
 
-// ---------------------------------------------------------------- storage
-
 let cache: MockDb | null = null
 
-/** The sample data, read from this browser the first time it is needed */
 function db(): MockDb {
   if (cache) return cache
   try {
@@ -56,9 +43,7 @@ function db(): MockDb {
       const parsed = JSON.parse(raw) as MockDb
       if (parsed.version === DB_VERSION) return (cache = parsed)
     }
-  } catch {
-    /* unreadable or blocked: start fresh */
-  }
+  } catch {}
   cache = createSeed()
   save()
   return cache
@@ -67,22 +52,17 @@ function db(): MockDb {
 function save() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cache))
-  } catch {
-    /* private window or full: changes last until reload */
-  }
+  } catch {}
 }
 
-/** Start again from the original sample data */
 export function resetSampleData() {
   cache = createSeed()
   save()
 }
 
-/** Answer like a server would: a copy (screens can't change the stored data by accident), as a promise */
 function ok<T>(value: T): Promise<T> {
   return Promise.resolve(value === undefined ? value : structuredClone(value))
 }
-/** After a change: store it, then answer */
 function saved<T>(value: T): Promise<T> {
   save()
   return ok(value)
@@ -92,10 +72,7 @@ const fail = (status: number, msg: string): Promise<never> => Promise.reject(new
 const nid = () => db().nextId++
 const nref = () => `P-${String(db().nextRef++).padStart(4, '0')}`
 const iso = (ts = Date.now()) => new Date(ts).toISOString()
-/** Naive "YYYY-MM-DDTHH:MM" values are UAE time, as on the backend */
 const parseTime = (v: string) => Date.parse(v.length <= 16 ? `${v}+04:00` : v)
-
-// ---------------------------------------------------------------- uploaded files (kept in memory, not stored)
 
 const files = /* @__PURE__ */ new Map<string, string>()
 function setFile(kind: 'image' | 'media', id: number, file: File) {
@@ -107,15 +84,12 @@ function clearFile(kind: 'image' | 'media', id: number) {
   if (url) URL.revokeObjectURL(url)
   files.delete(`${kind}:${id}`)
 }
-/** After a reload the uploaded file is gone: show a neutral picture instead */
 const PLACEHOLDER =
   'data:image/svg+xml;utf8,' +
   /* @__PURE__ */ encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d5dfc"/><stop offset="1" stop-color="#22c1c3"/></linearGradient></defs><rect width="1200" height="1200" fill="url(#g)"/><text x="600" y="610" font-family="sans-serif" font-size="64" fill="#fff" text-anchor="middle" opacity="0.9">Sample image</text></svg>`,
   )
 const fileUrl = (kind: 'image' | 'media', id: number) => files.get(`${kind}:${id}`) ?? PLACEHOLDER
-
-// ---------------------------------------------------------------- helpers
 
 function leadView(l: Lead): Lead {
   const d = db()
@@ -160,7 +134,6 @@ function plannedFrom(body: PlannedPostInput, prev?: PlannedPost): PlannedPost {
     image_alt: body.image_alt,
     visibility: body.visibility,
     ...scheduleFields(body.scheduled_at),
-    // Editing an approved post sends it back to draft until it is published again
     status: prev && prev.status !== 'approved' ? prev.status : 'draft',
     topic: body.topic,
     industry: body.industry,
@@ -176,7 +149,6 @@ function plannedFrom(body: PlannedPostInput, prev?: PlannedPost): PlannedPost {
   }
 }
 
-/** A planner post that went out becomes a tracked post (Data → Posts), keeping its P-number */
 function publishToPosts(p: PlannedPost, postUrl?: string) {
   const d = db()
   const ts = Date.now()
@@ -213,7 +185,6 @@ function publishToPosts(p: PlannedPost, postUrl?: string) {
   Object.assign(p, { status: 'published', published_at: post.published_at, linkedin_urn: urn, post_id: post.id, error: null })
 }
 
-/** What the backend's scheduler would have done by now: publish due posts, mark forgotten hand-posted ones as missed */
 function catchUpSchedule() {
   const now = Date.now()
   let changed = false
@@ -245,8 +216,6 @@ function postFields(b: PostInput, timeKnown: boolean) {
 
 const getPost = (id: number) => db().posts.find((p) => p.id === id)
 const getPlanned = (id: number) => db().planned.find((p) => p.id === id)
-
-// ---------------------------------------------------------------- AI (ready-made answers)
 
 const IDEA_BANK: Idea[] = [
   {
@@ -473,10 +442,7 @@ const aiRun = <R>(result: R) => {
   return { id: nid(), status: 'ok', model: SAMPLE_MODEL, cost_usd: 0.02, input_tokens: 2400, output_tokens: 700, result, created_at: iso() }
 }
 
-// ---------------------------------------------------------------- the api
-
 export const sampleApi: Api = {
-  // ---- accounts
   accounts: () => ok(db().accounts),
   createAccount: (body) => {
     const a: Account = { ...body, id: nid() }
@@ -485,7 +451,6 @@ export const sampleApi: Api = {
     return saved(a)
   },
 
-  // ---- posts and their numbers
   posts: ({ account_id, format, checkpoint = 'latest' }) =>
     ok(
       db()
@@ -563,7 +528,6 @@ export const sampleApi: Api = {
     return saved(A.toPost(db(), p))
   },
 
-  // ---- analysis
   overview: ({ account_id, checkpoint }) => ok(A.overview(db(), account_id, checkpoint)),
   suggestions: ({ account_id }) => ok(A.suggestions(db(), account_id)),
   dueSnapshots: ({ account_id }) => ok(A.dueSnapshots(db(), account_id)),
@@ -571,7 +535,6 @@ export const sampleApi: Api = {
   calendar: ({ account_id, from, to }) => ok(A.calendar(db(), account_id, from, to)),
   calendarItems: ({ from, to }) => ok({ from, to, items: A.itemsBetween(from, to) }),
 
-  // ---- page audience, documents, imports
   pageAudience: (accountId) => ok(db().pageAudience[accountId] ?? []),
   savePageAudience: (accountId, body: PageAudienceInput) => {
     const d = db()
@@ -596,7 +559,6 @@ export const sampleApi: Api = {
   },
   lastImports: (accountId) => ok(db().lastImports[accountId] ?? {}),
   pageDaily: (accountId) => ok(db().pageDaily[accountId] ?? []),
-  // Files are not read with sample data: the screens show what an import result looks like
   importCsv: (_accountId, file): Promise<ImportResult> =>
     ok({ posts_created: 0, posts_updated: 0, snapshots_saved: 0, errors: [{ row: 0, error: `Sample data: “${file.name}” was not read. Imports need the backend.` }] }),
   importLinkedInExport: (accountId, files, exportedOn) => {
@@ -623,7 +585,6 @@ export const sampleApi: Api = {
     return saved(result)
   },
 
-  // ---- leads
   leads: (accountId) =>
     ok(db().leads.filter((l) => l.account_id === accountId).sort((a, b) => b.received_on.localeCompare(a.received_on)).map(leadView)),
   createLead: (body: LeadInput) => {
@@ -650,7 +611,6 @@ export const sampleApi: Api = {
     return saved(leadView(l))
   },
 
-  // ---- who you are, and the team (no sign-in with sample data: the demo sign-in screen is shown)
   me: (): Promise<Me> =>
     ok({
       enabled: false,
@@ -681,7 +641,6 @@ export const sampleApi: Api = {
     return saved({ default_account_id: accountId })
   },
 
-  // ---- settings
   settings: () => ok({ current: db().settings, defaults: DEFAULTS }),
   saveSettings: (section, body) => {
     ;(db().settings as Record<string, unknown>)[section] = body
@@ -707,7 +666,6 @@ export const sampleApi: Api = {
       },
     }),
 
-  // ---- suggestions and AI ideas
   decisions: (accountId) => ok(db().decisions[accountId] ?? []),
   decide: ({ account_id, key, status }: { account_id: number; key: string; status: DecisionStatus | null }) => {
     const d = db()
@@ -756,11 +714,9 @@ export const sampleApi: Api = {
   postChatStatus: () => ok({ configured: true, messages_today: db().aiRunsToday, daily_limit: 60, session_limit: 20 }),
   postChat: (body) => saved(aiRun(chatTurn(body.messages, !!body.web_search))),
 
-  // ---- LinkedIn
   linkedinConfig: () => ok({ configured: true, missing: [] }),
   linkedinConnections: () => ok(db().connections),
   linkedinAuthUrl: (accountId) => {
-    // No real LinkedIn: connect straight away and come back as if the sign-in worked
     const d = db()
     const a = d.accounts.find((x) => x.id === accountId)
     if (!a) return fail(404, 'Account not found')
@@ -776,7 +732,6 @@ export const sampleApi: Api = {
     return saved(undefined)
   },
 
-  // ---- publishing
   planned: (accountId) => {
     catchUpSchedule()
     return ok(db().planned.filter((p) => p.account_id === accountId).sort((a, b) => (a.scheduled_at ?? '9999').localeCompare(b.scheduled_at ?? '9999')))

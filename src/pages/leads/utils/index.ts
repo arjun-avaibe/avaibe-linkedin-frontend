@@ -1,4 +1,3 @@
-/** Small helpers for leads: money, reply times, stale deals */
 import { differenceInCalendarDays } from 'date-fns'
 import type { Lead, LeadInput } from '@/lib/api'
 import { fmtNumber } from '@/lib/format'
@@ -10,7 +9,6 @@ export const daysSinceUpdate = (l: Lead) => differenceInCalendarDays(new Date(),
 
 export const isStale = (l: Lead) => !['won', 'lost'].includes(l.stage) && daysSinceUpdate(l) >= STALE_DAYS
 
-/** Hours from the enquiry (start of its UAE day if only the date is known) to the first reply, or to now if not replied */
 export function replyHours(l: Lead, now = Date.now()): number {
   const start = new Date(`${l.received_on}T00:00:00+04:00`).getTime()
   const end = l.replied_at ? new Date(l.replied_at).getTime() : now
@@ -19,7 +17,6 @@ export function replyHours(l: Lead, now = Date.now()): number {
 
 export const fmtHours = (h: number) => (h < 1 ? 'under 1 h' : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} days`)
 
-/** Source known = a specific source (not "Other"), or they told us how they heard */
 export const sourceKnown = (l: Lead) => l.source !== 'other' || !!l.how_heard
 
 export const yesNo = (v: boolean | null) => (v == null ? '' : v ? 'yes' : 'no')

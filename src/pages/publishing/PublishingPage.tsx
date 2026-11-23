@@ -21,7 +21,6 @@ export function PublishingPage() {
   const connection = connections.find((c) => c.account_id === account?.id)
   const isCompany = account?.kind === 'company'
   const [params, setParams] = useSearchParams()
-  // Filters instead of tabs: format and status, kept in the address (?format=, ?status=; old ?tab= links still work)
   const formatParam = params.get('format') ?? params.get('tab')
   const tab: PlannedFormat | 'all' = (PLANNED_FORMATS as readonly string[]).includes(formatParam ?? '') ? (formatParam as PlannedFormat) : 'all'
   const statusParam = params.get('status') ?? 'all'
@@ -32,7 +31,6 @@ export function PublishingPage() {
   const shown = all.filter((p) => (tab === 'all' || p.format === tab) && STATUS_FILTERS.find((f) => f.value === status)!.test(p))
   const waitingIn = (f: PlannedFormat | 'all') => all.filter((p) => (f === 'all' || p.format === f) && needsAction(p)).length
   const navigate = useNavigate()
-  // Old links (?new_at=<ISO time> from the Calendar) now open the Create post page
   useEffect(() => {
     const at = params.get('new_at')
     if (at) navigate(`/create?new_at=${encodeURIComponent(at)}`, { replace: true })
@@ -54,7 +52,6 @@ export function PublishingPage() {
         }
       />
 
-      {/* One quiet row of filters (was a tab per format) */}
       <div className="flex flex-wrap items-center gap-3">
         <SimpleSelect
           label="Format"
@@ -62,12 +59,11 @@ export function PublishingPage() {
           onChange={(v) => setFilter('format', v)}
           options={[
             { value: 'all', label: 'All', count: all.length },
-            // A red dot (no text) marks formats with posts waiting for someone, as the old tabs did
             ...PLANNED_FORMATS.map((f) => ({
               value: f,
               label: PLANNED_FORMAT_LABELS[f],
               count: all.filter((p) => p.format === f).length,
-              countInList: false, // the open list stays clean: only "All" shows a number
+              countInList: false,
               dot: waitingIn(f) > 0,
               dotLabel: `${waitingIn(f)} waiting for someone`,
             })),

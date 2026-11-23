@@ -1,9 +1,3 @@
-/**
- * React Query hooks shared by several pages (Dashboard, Data, the sidebar, more than one feature).
- * Hooks used by one page only live next to it: src/pages/<page>/queries/index.ts.
- *
- * Query keys live in `keys` so every invalidation names the same thing: a write refreshes every view that shows it.
- */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   api,
@@ -38,8 +32,6 @@ export const keys = {
   team: ['team'] as const,
 }
 
-// ---------------------------------------------------------------- accounts and posts
-
 export function useAccounts(enabled = true) {
   return useQuery({ queryKey: keys.accounts, queryFn: api.accounts, enabled })
 }
@@ -52,7 +44,6 @@ export function usePosts(accountId: number | undefined, opts: { format?: string;
   })
 }
 
-/** Posts of every account (each still classified against its own account) */
 export function useAllPosts() {
   return useQuery({ queryKey: [...keys.allPosts, {}], queryFn: () => api.posts({}) })
 }
@@ -76,7 +67,6 @@ export const useSuggestions = (a: number | undefined) => useAnalytics(a, 'sugges
 
 export const useDueSnapshots = (a: number | undefined) => useAnalytics(a, 'due', {}, () => api.dueSnapshots({ account_id: a! }))
 
-/** After any write, refresh posts and analytics for the account. */
 export function useInvalidateAccount() {
   const qc = useQueryClient()
   return (accountId: number, postId?: number) => {
@@ -127,8 +117,6 @@ export function useSaveAudience(postId: number, accountId: number) {
   })
 }
 
-// ---------------------------------------------------------------- page numbers and audience
-
 export function usePageAudience(accountId: number | undefined) {
   return useQuery({ queryKey: keys.pageAudience(accountId ?? 0), queryFn: () => api.pageAudience(accountId!), enabled: !!accountId })
 }
@@ -176,8 +164,6 @@ export function useImportCsv(accountId: number) {
   })
 }
 
-// ---------------------------------------------------------------- suggestions, documents, leads (read by several pages)
-
 export function useAccountDoc<K extends keyof AccountDocs>(accountId: number | undefined, kind: K) {
   return useQuery({ queryKey: keys.doc(accountId ?? 0, kind), queryFn: () => api.accountDoc(accountId!, kind), enabled: !!accountId })
 }
@@ -191,7 +177,6 @@ export function useIdeas(accountId: number | undefined) {
     queryKey: keys.ideas(accountId ?? 0),
     queryFn: () => api.ideas(accountId!),
     enabled: !!accountId,
-    // While a teammate's run is in progress, check back so their ideas appear here too
     refetchInterval: (q) => (q.state.data?.running ? 10_000 : false),
   })
 }
@@ -199,8 +184,6 @@ export function useIdeas(accountId: number | undefined) {
 export function useLeads(accountId: number | undefined) {
   return useQuery({ queryKey: keys.leads(accountId ?? 0), queryFn: () => api.leads(accountId!), enabled: !!accountId })
 }
-
-// ---------------------------------------------------------------- calendar (Calendar page, post editor, notifications)
 
 export function useCalendar(accountId: number | undefined, from: string, to: string, opts: { staleTime?: number } = {}) {
   return useQuery({
@@ -211,24 +194,19 @@ export function useCalendar(accountId: number | undefined, from: string, to: str
   })
 }
 
-/** Holidays and events only (no account needed) */
 export function useCalendarItems(from: string, to: string) {
   return useQuery({ queryKey: keys.calendarItems(from, to), queryFn: () => api.calendarItems({ from, to }), staleTime: 60 * 60_000 })
 }
-
-// ---------------------------------------------------------------- publishing (sidebar, Dashboard, Publishing, Create post)
 
 export function usePlanned(accountId: number | undefined) {
   return useQuery({
     queryKey: keys.planner(accountId ?? 0),
     queryFn: () => api.planned(accountId!),
     enabled: !!accountId,
-    // Scheduled posts change state on the server; poll while the page is open
     refetchInterval: 30_000,
   })
 }
 
-/** Any planner write: refresh the queue, and posts/analytics (a publish creates a tracked post). */
 export function usePlannerMutation<TArgs, TResult = unknown>(accountId: number, fn: (args: TArgs) => Promise<TResult>) {
   const qc = useQueryClient()
   return useMutation({

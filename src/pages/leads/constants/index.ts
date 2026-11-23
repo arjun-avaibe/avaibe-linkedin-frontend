@@ -1,4 +1,3 @@
-/** Labels and limits shared by the Leads & sales pages */
 import type { LeadSource, LeadStage } from '@/lib/api'
 
 export const SOURCE_LABEL: Record<LeadSource, string> = {
@@ -20,5 +19,4 @@ export const FROM_LINKEDIN: LeadSource[] = ['company_post', 'founder_post', 'com
 
 export const REPLY_TARGET_HOURS = 24
 
-/** An open deal with no change for this long is flagged on the Pipeline, so it doesn't go quiet */
 export const STALE_DAYS = 14

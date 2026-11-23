@@ -17,7 +17,6 @@ export function SettingsPage() {
   const { data, isLoading } = useSettings()
   const auth = useAuth()
 
-  // Brand & knowledge is part of the Claude tab now
   if (params.get('tab') === 'brand') return <Navigate to="/settings?tab=claude" replace />
 
   if (!auth.can('admin')) {
@@ -50,7 +49,6 @@ export function SettingsPage() {
           {isLoading || !data ? (
             <Skeleton className="h-96" />
           ) : (
-            // Remount when saved values change (e.g. after "Restore defaults") so the form shows them
             <AudienceTab key={JSON.stringify(data.current.segments)} current={data.current.segments} />
           )}
         </TabsContent>

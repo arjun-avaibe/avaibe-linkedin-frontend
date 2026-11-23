@@ -1,4 +1,3 @@
-/** All the app's addresses. Pages load on demand (routes/pages.ts); old addresses redirect to where things live now. */
 import { Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
@@ -12,36 +11,30 @@ export function AppRoutes() {
         <Routes>
           <Route path="signin" element={<P.SignInPage />} />
           <Route element={<Layout />}>
-            {/* Overview */}
             <Route index element={<P.DashboardPage />} />
             <Route path="data" element={<P.DataPage />} />
             <Route path="posts/new" element={<P.NewPostPage />} />
             <Route path="posts/:id" element={<P.PostDetailPage />} />
             <Route path="import" element={<P.ImportPage />} />
 
-            {/* Content */}
             <Route path="suggestions/:area" element={<P.SuggestionsPage />} />
             <Route path="calendar" element={<P.CalendarPage />} />
             <Route path="publishing" element={<P.PublishingPage />} />
             <Route path="create" element={<P.CreatePostPage />} />
             <Route path="create/:id" element={<P.CreatePostPage />} />
 
-            {/* Brand */}
             <Route path="brand/suggestions" element={<P.BrandSuggestionsPage />} />
             <Route path="brand/competitors" element={<P.CompetitorsPage />} />
 
-            {/* Leads & sales */}
             <Route path="leads/suggestions" element={<P.LeadSuggestionsPage />} />
             <Route path="leads/log" element={<P.LeadsLogPage />} />
             <Route path="leads/pipeline" element={<P.PipelinePage />} />
             <Route path="leads/results" element={<P.LeadResultsPage />} />
 
-            {/* Workspace */}
             <Route path="linkedin" element={<P.LinkedInPage />} />
             <Route path="settings" element={<P.SettingsPage />} />
             <Route path="profile" element={<P.ProfilePage />} />
 
-            {/* Section roots and old addresses */}
             <Route path="posts" element={<Navigate to="/data?tab=posts" replace />} />
             <Route path="audience" element={<Navigate to="/data?tab=audience" replace />} />
             <Route path="suggestions" element={<Navigate to="/suggestions/content" replace />} />

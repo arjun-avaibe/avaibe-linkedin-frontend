@@ -1,7 +1,3 @@
-/**
- * Analyse → Suggestions: the prompt for an outside image or video tool (Seedance for video, Seedream for images).
- * The team copies it into the tool, makes the visual there and uploads the result on Create post.
- */
 import { toast } from 'sonner'
 import { Clapperboard, Copy, ExternalLink, ImageIcon, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'

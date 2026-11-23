@@ -1,7 +1,3 @@
-/**
- * Who is signed in. The server is the authority on permissions; the UI only hides what a person
- * can't use, so screens stay uncluttered. Every action is checked again on the server.
- */
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { api, ROLES, type Me, type Role } from '@/lib/api'
@@ -13,13 +9,11 @@ interface AuthCtx {
   isLoading: boolean
   error: Error | null
   user: NonNullable<Me['user']> | null
-  /** Sign-in is configured (false = local dev mode, everyone acts as admin) */
   enabled: boolean
   signedIn: boolean
   can: (role: Role) => boolean
   canSwitch: boolean
   signOut: () => Promise<void>
-  /** Local mode only: the email typed on the demo sign-in screen (null = not signed in to the demo) */
   demoEmail: string | null
   demoSignIn: (email: string) => void
 }

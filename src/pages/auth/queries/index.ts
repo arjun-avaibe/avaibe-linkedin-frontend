@@ -1,4 +1,3 @@
-/** Sign-in: who is signed in (read once and shared through context/auth.tsx) */
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 

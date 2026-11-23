@@ -3,7 +3,6 @@ import { api, type PlannedFormat, type PlannedPost, type ChatTurn } from '@/lib/
 import { fetchAsFile } from '@/lib/attachment'
 import type { Visual } from '../types'
 
-/** Roughly what LinkedIn shows before "…see more": the first 3 lines, cut at about 210 characters. Approximate: it varies by device. */
 export function hookPreview(caption: string): string {
   const lines = caption.trim().split('\n').slice(0, 3).join(' ').replace(/\s+/g, ' ')
   return lines.length > 210 ? `${lines.slice(0, 210).trimEnd()}…` : lines
@@ -72,7 +71,6 @@ export async function copy(text: string) {
   }
 }
 
-/** What the model sees for its own earlier turns: what it said, the questions it asked and any version it wrote */
 export function assistantText(t: ChatTurn): string {
   const parts = [t.message]
   if (t.questions.length) parts.push(t.questions.map((q) => `- ${q.question} (options: ${q.options.join(' / ')})`).join('\n'))

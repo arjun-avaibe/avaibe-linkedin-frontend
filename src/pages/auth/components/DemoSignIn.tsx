@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/context/auth'
 import { EMAIL } from '../constants'
 
-/** Local mode: looks like the product's sign-in, but nothing is checked and the password is never kept. */
 export function DemoSignIn({ signedOut }: { signedOut: boolean }) {
   const { demoSignIn } = useAuth()
   const navigate = useNavigate()

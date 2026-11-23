@@ -46,7 +46,6 @@ import { needsAction } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 import { HelpDialog } from '@/components/layout/HelpDialog'
 
-// Set VITE_COPY_LABEL (e.g. "Test2") on an editable copy, so it can't be confused with the original
 const COPY_LABEL = import.meta.env.VITE_COPY_LABEL as string | undefined
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; role: Role }
@@ -55,8 +54,6 @@ const OVERVIEW: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, role: 'viewer' },
   { to: '/data', label: 'Data', icon: Database, role: 'viewer' },
 ]
-// Content follows the work: Suggestions (what to post) → Calendar (when) → Publishing (write, approve, post).
-// Create post opens from Publishing → New post (or a calendar day), so it has no item of its own.
 const CONTENT: NavItem[] = [
   { to: '/suggestions/content', label: 'Suggestions', icon: Lightbulb, role: 'viewer' },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays, role: 'viewer' },
@@ -66,7 +63,6 @@ const BRAND: NavItem[] = [
   { to: '/brand/suggestions', label: 'Suggestions', icon: Lightbulb, role: 'viewer' },
   { to: '/brand/competitors', label: 'Competitors', icon: Swords, role: 'viewer' },
 ]
-// Leads and Sales are one section: the Leads log and the Pipeline are the same leads, listed vs by stage
 const LEADS: NavItem[] = [
   { to: '/leads/suggestions', label: 'Suggestions', icon: Lightbulb, role: 'viewer' },
   { to: '/leads/log', label: 'Leads log', icon: Inbox, role: 'viewer' },
@@ -74,12 +70,10 @@ const LEADS: NavItem[] = [
   { to: '/leads/results', label: 'Results', icon: TrendingUp, role: 'viewer' },
 ]
 
-/** A sidebar section whose items fold away: open while you're on one of its pages, or when clicked. */
 function useFoldingSection(prefix: string) {
   const { pathname } = useLocation()
   const inside = pathname.startsWith(prefix)
   const [manual, setManual] = useState<{ path: string; open: boolean } | null>(null)
-  // A manual open/close lasts until the page changes; then the section follows where you are
   const open = manual && manual.path === pathname ? manual.open : inside
   return { open, toggle: () => setManual({ path: pathname, open: !open }) }
 }
@@ -92,7 +86,6 @@ export function AppSidebar() {
   const { counts } = useSuggestionItems(account?.id)
   const { data: planned = [] } = usePlanned(account?.id)
   const publishingWaiting = planned.filter(needsAction).length
-  // Content suggestions only: Brand, Leads and Sales are counted in their own sections
   const suggestionCount = counts.content
   const auth = useAuth()
   const [help, setHelp] = useState(false)
@@ -101,10 +94,8 @@ export function AppSidebar() {
   const fromCalendar = new URLSearchParams(search).get('from') === 'calendar'
   const isActive = (to: string) => {
     if (to === '/') return pathname === '/'
-    // Import and Posts live inside Data now
     if (to === '/data') return pathname.startsWith('/data') || pathname.startsWith('/import') || pathname.startsWith('/posts')
     if (to === '/suggestions/content') return pathname.startsWith('/suggestions')
-    // New / Edit post open from Publishing, or from a calendar day
     if (to === '/publishing') return pathname.startsWith('/publishing') || (pathname.startsWith('/create') && !fromCalendar)
     if (to === '/calendar') return pathname.startsWith('/calendar') || (pathname.startsWith('/create') && fromCalendar)
     return pathname.startsWith(to)
@@ -193,7 +184,6 @@ export function AppSidebar() {
             {COPY_LABEL} · editable copy
           </div>
         )}
-        {/* Pinned at the bottom: workspace settings (admins) and help. Your own profile is under your picture, top right. */}
         <SidebarMenu>
           {auth.can('admin') && (
             <SidebarMenuItem>
@@ -216,7 +206,6 @@ export function AppSidebar() {
   )
 }
 
-/** Top of the sidebar: product mark + the current account, which switches accounts when allowed. */
 function WorkspaceSwitcher() {
   const { accounts, account, setAccountId } = useAccount()
   const auth = useAuth()

@@ -36,15 +36,12 @@ export function PlannedCard({
 }) {
   const tz = useTz()
   const [confirmPublish, setConfirmPublish] = useState(false)
-  const [reviewing, setReviewing] = useState(false) // the Approve preview window
+  const [reviewing, setReviewing] = useState(false)
   const [markPosted, setMarkPosted] = useState(false)
   const action = usePlannedAction(accountId, p.id)
   const remove = useDeletePlanned(accountId, p.id)
-  // Preview → Publish: put it on the schedule (at its time) or clear it for publishing now
   const schedule = useSchedulePlanned(accountId, p.id)
-  // Not published yet: can be previewed and published
   const unpublished = p.status === 'draft' || p.status === 'failed' || p.status === 'missed'
-  // Scheduled posts can be edited too; saving takes them off the schedule until they're published again
   const editable = unpublished || p.status === 'approved'
   const auth = useAuth()
   const waitMins = useMinutesLeft(p.retry_at)
@@ -70,7 +67,6 @@ export function PlannedCard({
         setConfirmPublish(false)
       },
       onError: (e) => {
-        // A wait request from the server is guidance, not a failure
         if (e instanceof ApiError && e.status === 409 && e.message.startsWith('LinkedIn is busy')) toast.info(e.message)
         else toast.error(e.message)
         setConfirmPublish(false)

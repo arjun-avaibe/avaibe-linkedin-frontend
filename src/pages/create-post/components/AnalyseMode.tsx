@@ -58,7 +58,6 @@ export function AnalyseMode({
           details: draft.details ?? {},
           media_attached: !!visual,
         },
-        // The image or slides go along only when they're picked
         getAttachment: async () => (chosen.includes('visual') ? await getAttachment(true) : null),
       },
       {

@@ -1,7 +1,6 @@
 import { Paperclip } from 'lucide-react'
 import type { Visual } from '../types'
 
-/** Shown once above both AI modes: which visual goes along, with a switch to leave it out */
 export function VisualChip({ visual, include, setInclude }: { visual: NonNullable<Visual>; include: boolean; setInclude: (v: boolean) => void }) {
   if (visual.kind === 'video') {
     return (

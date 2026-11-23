@@ -13,7 +13,7 @@ import './index.css'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60_000, // serve cached results for a minute; writes invalidate explicitly
+      staleTime: 60_000,
       refetchOnWindowFocus: false,
       retry: 1,
     },

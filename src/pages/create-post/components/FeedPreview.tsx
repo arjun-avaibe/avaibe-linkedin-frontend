@@ -3,7 +3,6 @@ import { Globe } from 'lucide-react'
 import type { PlannedDetails, PlannedFormat } from '@/lib/api'
 import { hookPreview } from '../utils'
 
-/** The post roughly as it appears in the LinkedIn feed (shared by Create post's Preview and Publishing's Approve) */
 export function FeedPreview({
   accountName,
   caption,

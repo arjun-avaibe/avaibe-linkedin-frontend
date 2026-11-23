@@ -32,7 +32,6 @@ export function DayPanel({
   const planned = data.planned.filter((p) => p.date === day)
   const advice = dayAdvice(day, items, data, isPast)
   const adv = data.timing.ready ? data.timing.days[day] : undefined
-  // A proven best slot if there is one; otherwise the slot that's slightly ahead so far
   const start = (adv && SLOT_START[adv.best_slot]) || '10:00'
   const newAt = new Date(`${day}T${start}:00+04:00`).toISOString()
 

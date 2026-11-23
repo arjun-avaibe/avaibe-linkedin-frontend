@@ -17,7 +17,6 @@ export function LinkedInPage() {
   const { data: connections = [] } = useLinkedInConnections()
   const [params, setParams] = useSearchParams()
 
-  // Result of the LinkedIn sign-in redirect
   useEffect(() => {
     const status = params.get('linkedin')
     if (!status) return

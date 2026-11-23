@@ -2,7 +2,6 @@ import { UserRound } from 'lucide-react'
 import { useMe } from '@/lib/me'
 import { cn } from '@/lib/utils'
 
-/** Your profile photo, or your initials when there's no photo */
 export function UserAvatar({ className }: { className?: string }) {
   const me = useMe()
   return (

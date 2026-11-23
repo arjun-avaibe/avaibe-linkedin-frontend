@@ -26,7 +26,6 @@ export function Editor({ accountId, accountName, initial }: { accountId: number;
   const auth = useAuth()
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  // Lock the zone while editing so a zone switch can't reinterpret the typed time
   const [zone] = useState(tz.zone)
   const formatParam = params.get('format') as PlannedFormat | null
   const [format, setFormat] = useState<PlannedFormat>(initial?.format ?? (formatParam && PLANNED_FORMATS.includes(formatParam) ? formatParam : 'text'))
@@ -34,15 +33,12 @@ export function Editor({ accountId, accountName, initial }: { accountId: number;
   const setDetail = <K extends keyof PlannedDetails>(k: K, v: PlannedDetails[K]) => setDetails((d) => ({ ...d, [k]: v }))
   const [media, setMedia] = useState<File | null>(null)
   const manual = format !== 'text' && format !== 'image'
-  // Generate with AI: the image prompt (Analyse can fill it) and, for carousels, generate vs upload
 
   const [caption, setCaption] = useState(initial?.caption ?? '')
-  // From the Calendar: ?new_at=<ISO time> pre-fills the date and time
   const newAt = params.get('new_at')
   const startAt = initial?.scheduled_at ?? (newAt && !Number.isNaN(Date.parse(newAt)) ? newAt : null)
   const [scheduled, setScheduled] = useState(startAt ? isoToZonedInput(startAt, zone) : '')
   const [visibility, setVisibility] = useState<'PUBLIC' | 'CONNECTIONS'>(initial?.visibility ?? 'PUBLIC')
-  // Required: what the post aims for. Older drafts have none until someone picks one.
   const [goal, setGoal] = useState<PostGoal | null>(initial?.goal ?? null)
   const [goalMissing, setGoalMissing] = useState(false)
   const [topic, setTopic] = useState(initial?.topic ?? '')
@@ -112,7 +108,6 @@ export function Editor({ accountId, accountName, initial }: { accountId: number;
 
   return (
     <div className="mx-auto max-w-page">
-      {/* Breadcrumb and title */}
       <nav className="mb-1 flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
         {(initial || params.get('from') === 'calendar') && <BackButton fallback={params.get('from') === 'calendar' ? '/calendar' : '/publishing'} />}
         <Link to={params.get('from') === 'calendar' ? '/calendar' : '/publishing'} className="hover:text-foreground">
@@ -134,7 +129,6 @@ export function Editor({ accountId, accountName, initial }: { accountId: number;
       )}
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,6fr)_minmax(0,5fr)]">
-        {/* ---------------- left: the post */}
         <section className="flex flex-col overflow-hidden rounded-[1.8rem] bg-card">
           <header className="flex items-center gap-3 border-b px-6 py-4">
             <IconTile icon={PenSquare} />
@@ -276,7 +270,6 @@ export function Editor({ accountId, accountName, initial }: { accountId: number;
               </div>
             </div>
 
-            {/* Best time to post for the chosen day, from this account's own past posts */}
             <PostingTimeHint accountId={accountId} scheduled={scheduled} zone={zone} onPick={setScheduled} />
 
             <div className="grid gap-4 sm:grid-cols-3">
@@ -306,7 +299,6 @@ export function Editor({ accountId, accountName, initial }: { accountId: number;
           </footer>
         </section>
 
-        {/* ---------------- right: AI suggestions */}
         <AiPanel
           accountId={accountId}
           visual={visualFor(format, { file, media, removeImage, initial })}

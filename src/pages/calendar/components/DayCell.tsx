@@ -32,13 +32,12 @@ export function DayCell({
   planned: CalendarPlanned[]
   items: CalendarItem[]
   accountId: number
-  hint?: string // the proven best slot for this date, if any
+  hint?: string
   allItems: CalendarItem[]
 }) {
   const d = parseISO(day)
   const weekend = UAE_WEEKEND.has(d.getDay())
   const uaeHoliday = allItems.some((i) => i.kind === 'uae_holiday')
-  // Periods show as a thin coloured band; single-day items as chips
   const periods = items.filter((i) => i.start !== i.end && i.kind !== 'uae_holiday')
   const chips = items.filter((i) => !periods.includes(i))
   const own = posts.filter((p) => p.account_id === accountId)

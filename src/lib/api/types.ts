@@ -1,8 +1,3 @@
-/**
- * The shapes of everything the API sends and receives, plus the fixed lists the screens use (formats, checkpoints…).
- * Shared by the backend client (http-api.ts) and the sample data (src/sample-data).
- */
-// 'untagged': imported from a LinkedIn export that didn't say what kind of post it was
 export const FORMATS = ['image', 'carousel', 'video', 'poll', 'newsletter', 'text', 'untagged'] as const
 export type PostFormat = (typeof FORMATS)[number]
 
@@ -135,20 +130,16 @@ export interface LeadInput {
   value_aed: number | null
   closed_on: string | null
   notes: string | null
-  /** In their words: how they heard about AVAIBE */
   how_heard: string | null
   utm_source: string | null
   utm_medium: string | null
   utm_campaign: string | null
-  /** First reply by the team (ISO time) */
   replied_at: string | null
-  /** Override; null = default rule (UAE-based decision-maker) */
   qualified: boolean | null
 }
 
 export interface Lead extends LeadInput {
   id: number
-  /** The override if set, otherwise the default rule; null when unknown */
   is_qualified: boolean | null
   post_title: string | null
   post_topic: string | null
@@ -191,7 +182,6 @@ export interface IdeasRun {
   created_at: string
 }
 
-/** Brand section: shared per-account documents */
 export interface PageChecklistData {
   items: Record<string, { done: boolean; note?: string | null }>
 }
@@ -213,7 +203,6 @@ export interface Competitor {
 export interface CompetitorsData {
   competitors: Competitor[]
 }
-/** A founder's totals across ALL their posts (LinkedIn member analytics), written by the sync */
 export interface MemberTotalsData {
   as_of: string | null
   followers: number | null
@@ -235,7 +224,6 @@ export interface AccountDoc<K extends keyof AccountDocs> {
   updated_at: string | null
 }
 
-/** The team's shared decision on a suggestion ("rule:<id>") or Claude idea ("ai:<run>:<index>") */
 export type DecisionStatus = 'doing' | 'later' | 'dismissed' | 'done'
 export interface Decision {
   key: string
@@ -250,7 +238,6 @@ export interface IdeasState {
   latest: IdeasRun | null
   runs_today: number
   daily_limit: number
-  /** A run is in progress for this account (possibly started by someone else) */
   running: boolean
 }
 
@@ -275,10 +262,8 @@ export type PlannedStatus = 'draft' | 'approved' | 'publishing' | 'published' | 
 export const PLANNED_FORMATS = ['text', 'image', 'carousel', 'video', 'article', 'poll'] as const
 export type PlannedFormat = (typeof PLANNED_FORMATS)[number]
 
-/** Format-specific fields; only the ones for the post's format are stored */
 export interface PlannedDetails {
   document_title?: string
-  /** Carousel built in the app: its slides and look (the PDF is made in the browser and uploaded as the media file) */
   slides?: { headline: string; body: string }[]
   carousel_theme?: 'brand' | 'dark' | 'light'
   carousel_accent?: string
@@ -292,15 +277,11 @@ export interface PlannedDetails {
 
 export interface PlannedPost {
   id: number
-  /** Readable post ID (P-0042), kept when the post is published and tracked in Data */
   ref: string | null
   account_id: number
   format: PlannedFormat
-  /** Empty for drafts made before goals existed */
   goal: PostGoal | null
-  /** Posted by hand (carousel, video, article, poll): the app can't publish these yet */
   manual: boolean
-  /** Posted by hand: a hand-posted format, or an account the app can't post to yet */
   by_hand: boolean
   details: PlannedDetails
   has_media: boolean
@@ -323,7 +304,6 @@ export interface PlannedPost {
   linkedin_urn: string | null
   post_id: number | null
   error: string | null
-  /** LinkedIn was busy: next automatic try (approved) or when to try again (failed). Null when not waiting. */
   retry_at: string | null
   attempts: number
 }
@@ -335,7 +315,7 @@ export interface PlannedPostInput {
   caption: string
   image_alt: string | null
   visibility: 'PUBLIC' | 'CONNECTIONS'
-  scheduled_at: string | null // ISO 8601 with offset/UTC
+  scheduled_at: string | null
   goal: PostGoal
   topic: string | null
   industry: string | null
@@ -343,7 +323,6 @@ export interface PlannedPostInput {
   keywords: string[]
 }
 
-/** What a post aims for (required on Create post) */
 export type PostGoal = 'brand' | 'leads' | 'sales' | 'engagement'
 export const POST_GOALS: { value: PostGoal; label: string; hint: string }[] = [
   { value: 'brand', label: 'Brand', hint: 'Brand awareness: get AVAIBE known to the right people in the UAE' },
@@ -358,7 +337,6 @@ export interface Account {
   kind: 'company' | 'founder' | 'personal'
   linkedin_url: string | null
   is_test: boolean
-  /** Founder / personal profiles: the company page they belong to */
   parent_id?: number | null
 }
 
@@ -377,7 +355,6 @@ export type Snapshot = {
   engagements: number | null
   engagement_rate: number | null
   click_rate: number | null
-  /** From LinkedIn's member (founder) post analytics only */
   saves?: number | null
   sends?: number | null
   profile_views?: number | null
@@ -385,7 +362,6 @@ export type Snapshot = {
 
 export interface PostSummary {
   id: number
-  /** Readable post ID (P-0042): the same one the post had as a draft */
   ref: string | null
   account_id: number
   post_url: string | null
@@ -395,15 +371,11 @@ export interface PostSummary {
   published_at_uae: string
   published_at_ist: string
   day_uae: string
-  /** Null when only the date is known */
   slot_uae: string | null
-  /** False for posts imported from a LinkedIn export: only the date is known */
   time_known: boolean
-  /** Audience: true = targeted subset, false = all followers, null = unknown (manual or export) */
   targeted: boolean | null
   format: PostFormat
   topic: string | null
-  /** The topic/CTA were suggested from the caption on import and nobody has confirmed them yet */
   topic_suggested: boolean
   industry: string | null
   keywords: string[]
@@ -420,7 +392,6 @@ export interface Shares {
   uae_share: number | null
   education_share: number | null
   decision_maker_share: number | null
-  /** Job functions in Settings → Audience definitions (may be missing on older data) */
   tech_share?: number | null
   partner_share?: number | null
 }
@@ -439,7 +410,6 @@ export interface Post extends PostSummary {
   classification?: Classification | null
 }
 
-/** Audience statistics returned alongside most aggregates. Shares are 0..1 lower bounds. */
 export interface AudienceStats {
   posts_with_audience: number
   median_uae_share: number | null
@@ -475,8 +445,7 @@ export interface PostInput {
   account_id: number
   post_url: string | null
   author: string | null
-  published_at: string // ISO 8601 with offset/UTC (naive values are read as UAE time by the API)
-  /** Omit to keep what is stored; false = only the date is known */
+  published_at: string
   time_known?: boolean
   format: PostFormat
   topic: string | null
@@ -495,7 +464,6 @@ export type SnapshotInput = Partial<Record<MetricField, number | null>> & {
 
 export interface Overview extends AudienceStats {
   checkpoint: string
-  /** The checkpoint most posts have a snapshot for */
   suggested_checkpoint: Checkpoint
   posts_total: number
   posts_time_unknown: number
@@ -563,9 +531,7 @@ export interface Heatmap {
   days: string[]
   slots: string[]
   min_posts_per_slot: number
-  /** Median over every timed post: "your typical post", for comparing slots */
   overall_median?: number | null
-  /** Posts left out because only their date is known */
   posts_without_time: number
   cells: HeatCell[]
   suggestion: SlotSuggestion | null
@@ -630,7 +596,6 @@ export interface DueSnapshot {
 
 export interface Suggestion {
   id: string
-  // 'page' = company-page setup items, made in the app (lib/page-checklist.ts) and shown as Brand suggestions
   category: 'data' | 'timing' | 'format' | 'topic' | 'cta' | 'consistency' | 'trend' | 'page' | 'lead'
   priority: 'high' | 'medium' | 'low'
   title: string
@@ -642,13 +607,10 @@ export interface Suggestion {
   confidence: { level: 'high' | 'medium' | 'low'; reason: string }
   measure: { metric: string; period: string; target: string }
   action: { label: string; to: string } | null
-  /** Data fixes: how much is done so far */
   progress: { done: number; total: number; label: string } | null
-  /** Topic suggestions: the topic they are about */
   topic?: string | null
 }
 
-/** Past posts on the same topic as an idea, and how they did vs the account's typical post */
 export interface SimilarResult {
   topic: string | null
   count: number
@@ -667,7 +629,6 @@ export interface SuggestionsResult {
   metric: string
   metric_label: string
   baseline: number | null
-  /** The post age suggestions compare at (7d for history imported from LinkedIn) */
   checkpoint?: string
   generated_at?: string
   suggestions: Suggestion[]
@@ -691,9 +652,7 @@ export interface ExportFileResult {
   days_changed?: number
   days_unchanged?: number
   posts_created?: number
-  /** Already stored and something changed (usually newer numbers) */
   posts_updated?: number
-  /** Already stored and identical: nothing was added */
   posts_unchanged?: number
   snapshots_saved?: number
   snapshots_kept_manual?: number
@@ -703,7 +662,6 @@ export interface ExportFileResult {
   demographic_status?: 'new' | 'changed' | 'unchanged'
 }
 
-/** Analyse → a prompt for an outside image/video tool (Seedance, Seedream…) */
 export interface VisualPrompt {
   prompt: string
   settings: string[]
@@ -715,11 +673,8 @@ export interface CarouselPrompts {
   slides: { headline: string; body: string; prompt: string }[]
   tips: string[]
 }
-/** The parts of a post Analyse can review (picked after clicking Analyse) */
 export type AnalysePart = 'text' | 'visual' | 'timing' | 'poll'
 
-/** Create post → Analyse: Claude's suggestions for one draft (only ever runs on click).
-    Each review is filled only for the parts of the post the team picked. */
 export interface PostAssistResult {
   text: {
     improved_text: string
@@ -743,17 +698,14 @@ export interface PostAssistRun {
   created_at: string
 }
 
-/** Create post → Chat with AI: one turn of the conversation */
 export interface ChatTurn {
   message: string
   questions: { question: string; options: string[] }[]
   draft_text: string | null
-  /** When web search was on for that message: the pages it drew on */
   sources?: { title: string; url: string }[]
   searches?: number
 }
 
-/** When each LinkedIn export type was last imported for an account */
 export type LastImports = Partial<Record<'content' | 'followers' | 'visitors', { at: string | null; exported_on: string; file: string | null }>>
 
 export interface ExportImportResult {
