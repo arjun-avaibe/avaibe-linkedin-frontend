@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ---- Secrets and real AVAIBE data: never commit (moved from the old combined repository)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.xls
+*.xlsx
+*.csv
+*.docx
+.vercel

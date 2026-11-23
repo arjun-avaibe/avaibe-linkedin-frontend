@@ -1,32 +1,35 @@
-# React + TypeScript + Vite
+# AVAIBE LinkedIn app: frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The screens of the AVAIBE LinkedIn marketing app (React, Vite, Tailwind, shadcn/ui).
+The API is the separate **avaibe-linkedin-backend** repository (Django).
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+npm install
+npm run dev            # http://localhost:5173, forwards /api to http://127.0.0.1:8000
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+To point at another backend (for example the Test2 copy on port 8002):
+
+```powershell
+$env:API_TARGET = 'http://127.0.0.1:8002'; $env:VITE_COPY_LABEL = 'Test2'
+npm run dev -- --port 5175 --strictPort
+```
+
+## Host on Vercel
+
+1. vercel.com → **Add New → Project** → choose this repository (framework: Vite, detected; no root directory needed).
+2. Environment variable `VITE_DEMO_BANNER` = `1` shows "Demo data" across the top.
+3. `vercel.json` forwards `/api/...` to the backend on Render. If the Render service has another address,
+   change it there, commit and push.
+
+The screens need the backend to show anything: every page loads its data from `/api`.
+Hosting steps for the backend and database are in the backend repository's `DEPLOY.md`.
+
+## Checks
+
+```powershell
+npx tsc -b             # type check
+npm run build          # production build into dist/
+```
