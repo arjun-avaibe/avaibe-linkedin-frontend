@@ -16,7 +16,7 @@ import { Legend } from './components/Legend'
 import { TimingNote } from './components/TimingNote'
 import { WEEKDAYS, type Layer } from './constants'
 import { loadHidden, saveHidden, covers } from './utils'
-import { useCalendar } from '@/hooks/queries'
+import { useGetCalendar } from '@/pages/calendar/queries'
 
 export function CalendarPage() {
   const { account } = useAccount()
@@ -32,7 +32,7 @@ export function CalendarPage() {
   const [hidden, setHidden] = useState<Set<Layer>>(loadHidden)
   const [selected, setSelected] = useState<string | null>(null)
 
-  const { data, isLoading, isError } = useCalendar(account?.id, from, to)
+  const { data, isLoading, isError } = useGetCalendar(account?.id, from, to)
 
   const setMonth = (m: Date) => {
     setSelected(null)

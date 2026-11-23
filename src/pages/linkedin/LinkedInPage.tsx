@@ -6,15 +6,14 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { PageHeader, Section } from '@/components/common'
 import { useAccount } from '@/context/account'
-import { useLinkedInConfig } from '@/pages/linkedin/queries'
-import { useLinkedInConnections } from '@/hooks/queries'
 import { ConnectionCell } from './components/ConnectionCell'
 import { KIND_LABELS, PRODUCTS } from './constants'
+import { useGetLinkedInConfig, useGetLinkedInConnections } from '@/pages/linkedin/queries'
 
 export function LinkedInPage() {
   const { accounts } = useAccount()
-  const { data: config } = useLinkedInConfig()
-  const { data: connections = [] } = useLinkedInConnections()
+  const { data: config } = useGetLinkedInConfig()
+  const { data: connections = [] } = useGetLinkedInConnections()
   const [params, setParams] = useSearchParams()
 
   useEffect(() => {

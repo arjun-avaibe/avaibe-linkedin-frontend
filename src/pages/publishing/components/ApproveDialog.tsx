@@ -2,7 +2,7 @@ import { CalendarClock, Pencil, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useTz } from '@/context/timezone'
-import { api, type LinkedInConnection, type PlannedPost } from '@/lib/api'
+import { getPlannedImageUrl, type LinkedInConnection, type PlannedPost } from '@/lib/api'
 import { FeedPreview } from '@/pages/create-post/components/FeedPreview'
 
 export function ApproveDialog({
@@ -62,7 +62,7 @@ export function ApproveDialog({
           caption={p.caption}
           format={p.format}
           details={p.details ?? {}}
-          imageSrc={p.has_image ? api.plannedImageUrl(p.id, p.approved_at ?? p.id.toString()) : null}
+          imageSrc={p.has_image ? getPlannedImageUrl(p.id, p.approved_at ?? p.id.toString()) : null}
         />
         <p className="rounded-xl bg-muted/60 px-3 py-2 text-xs text-muted-foreground">{note}</p>
         <DialogFooter className="flex-wrap gap-2">

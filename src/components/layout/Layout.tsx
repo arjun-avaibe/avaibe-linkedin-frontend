@@ -77,7 +77,7 @@ export function Layout() {
 
 function SampleDataBanner() {
   const reset = async () => {
-    const { resetSampleData } = await import('@/sample-data')
+    const { resetSampleData } = await import('@/sample-data/api')
     resetSampleData()
     window.location.reload()
   }

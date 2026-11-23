@@ -2,12 +2,12 @@ import { CheckCircle2, CircleAlert, Receipt, Sparkles } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Section } from '@/components/common'
 import { BrandKitForm } from './BrandKitForm'
-import { useClaudeStatus, useSettings } from '@/pages/settings/queries'
 import { fmtNumber } from '@/lib/format'
+import { useGetClaudeStatus, useGetSettings } from '@/pages/settings/queries'
 
 export function ClaudeTab() {
-  const { data, isLoading } = useClaudeStatus()
-  const settings = useSettings()
+  const { data, isLoading } = useGetClaudeStatus()
+  const settings = useGetSettings()
   if (isLoading || !data) return <Skeleton className="h-48" />
   const u = data.usage
   return (

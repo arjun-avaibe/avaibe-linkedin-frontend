@@ -29,28 +29,41 @@ Publishing and Create post (approve → publish), Leads & sales, LinkedIn connec
 - Nothing is sent anywhere; the AI and LinkedIn features return ready-made answers. Imported files are not read.
 - `npm run build:sample` builds the same thing for hosting without a backend. `npm run build` (production) uses
   the backend and leaves the sample data out entirely.
-- When an endpoint changes, update it in `src/lib/api/` (types, endpoint, function) and in `src/sample-data/index.ts`;
+- When an endpoint changes, update it in `src/lib/apiConfig.ts` / `src/lib/api.ts` (and `src/types/api.ts`) and in `src/sample-data/api.ts`;
   the type checker points at anything that no longer matches.
 
 ## How the code is organised
 
+Same layout and API flow as the Kutubi admin panel:
+
 ```
 src/
-  lib/api/            the API: types.ts, endpoints.ts (every address), client.ts (HTTP), http-api.ts (one function per endpoint)
-  hooks/queries.ts    React Query hooks shared by several pages (posts, analytics, planner, leads, calendar…)
-  pages/<page>/       one folder per page (Kutubi admin layout):
-    <Name>Page.tsx      the page
-    components/         its parts
-    queries/index.ts    its React Query hooks (screens never call the api directly)
+  lib/axios.ts         axios instance: session cookie, CSRF header, 401 → sign-in, readable errors
+  lib/apiConfig.ts     API_ENDPOINTS: every backend address
+  lib/api.ts           one async function per endpoint (getPosts, createLead, plannedPostAction…)
+  types/api.ts         what the API sends and receives
+  providers/           queryClient and AppProvider (React Query, theme, auth, account)
+  pages/<page>/        one folder per page:
+    <Name>Page.tsx       the page
+    components/          its parts
+    queries/index.ts     its React Query hooks: useGetX (reads), useCreateX / useSaveX / useDeleteX (writes)
     constants/ utils/ hooks/ types.ts   when the page needs them
-  components/layout/  sidebar, top bar, page frame
-  components/ui/      shadcn/ui building blocks
-  routes/             every address; pages load on demand
-  sample-data/        the stand-in backend for `npm run dev`
+  components/layout/   sidebar, top bar, page frame
+  components/ui/       shadcn/ui building blocks
+  routes/              every address; pages load on demand
+  sample-data/api.ts   the same functions as lib/api.ts, answered from sample data (npm run dev)
 ```
 
+The flow is always: component → `pages/<page>/queries` hook → `lib/api.ts` function → `lib/axios.ts`.
+A hook used by several pages lives with the page that owns the data (posts and numbers in `pages/data/queries`,
+the publishing queue in `pages/publishing/queries`…) and other pages import it from there.
+
+With `npm run dev` (and `build:sample`) Vite points `@/lib/api` at `src/sample-data/api.ts`, so components and
+hooks are identical in both modes. `src/sample-data/matches-api.ts` makes the type check fail if the sample
+functions ever stop matching the real ones.
+
 Dashboard and Data (`pages/dashboard.tsx`, `pages/data.tsx` and the pages they include) still use the older flat
-layout; they move into folders when that work is finished.
+layout and the hook names in `hooks/queries.ts`; they move into folders when that work is finished.
 
 ## Host on Vercel
 

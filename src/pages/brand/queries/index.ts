@@ -1,11 +1,18 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { keys } from '@/hooks/queries'
-import { api, type AccountDocs } from '@/lib/api'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { getAccountDoc, saveAccountDoc, type AccountDocs } from '@/lib/api'
+import { queryClient } from '@/providers'
 
-export function useSaveAccountDoc<K extends keyof AccountDocs>(accountId: number, kind: K) {
-  const qc = useQueryClient()
+export const useGetAccountDoc = <K extends keyof AccountDocs>(accountId: number | undefined, kind: K) => {
+  return useQuery({
+    queryKey: ['doc', accountId, kind],
+    queryFn: () => getAccountDoc(accountId!, kind),
+    enabled: !!accountId,
+  })
+}
+
+export const useSaveAccountDoc = <K extends keyof AccountDocs>(accountId: number, kind: K) => {
   return useMutation({
-    mutationFn: (data: AccountDocs[K]) => api.saveAccountDoc(accountId, kind, data),
-    onSuccess: (doc) => qc.setQueryData(keys.doc(accountId, kind), doc),
+    mutationFn: (data: AccountDocs[K]) => saveAccountDoc({ accountId, kind, data }),
+    onSuccess: (doc) => queryClient.setQueryData(['doc', accountId, kind], doc),
   })
 }

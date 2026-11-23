@@ -40,11 +40,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAccount } from '@/context/account'
-import { usePlanned } from '@/hooks/queries'
 import { useSuggestionItems } from '@/hooks/suggestion-items'
 import { needsAction } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 import { HelpDialog } from '@/components/layout/HelpDialog'
+import { useGetPlannedPosts } from '@/pages/publishing/queries'
 
 const COPY_LABEL = import.meta.env.VITE_COPY_LABEL as string | undefined
 
@@ -84,7 +84,7 @@ export function AppSidebar() {
   const { pathname, search } = useLocation()
   const { account } = useAccount()
   const { counts } = useSuggestionItems(account?.id)
-  const { data: planned = [] } = usePlanned(account?.id)
+  const { data: planned = [] } = useGetPlannedPosts(account?.id)
   const publishingWaiting = planned.filter(needsAction).length
   const suggestionCount = counts.content
   const auth = useAuth()

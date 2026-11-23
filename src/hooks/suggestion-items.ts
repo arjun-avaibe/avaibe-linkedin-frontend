@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
 import { Briefcase, ClipboardList, Handshake, Magnet, Megaphone, Palette, SearchCheck, type LucideIcon } from 'lucide-react'
 import { useAccount } from '@/context/account'
-import { useAccountDoc, useDecisions, useIdeas, useLeads, usePosts, useSuggestions } from '@/hooks/queries'
 import type { Decision, DecisionStatus, Idea, IdeaType, Suggestion } from '@/lib/api'
 import { checklistSuggestion, inactiveSuggestion, PAGE_CHECKLIST } from '@/lib/page-checklist'
 import { leadSuggestions } from '@/lib/lead-rules'
+import { useGetAccountDoc } from '@/pages/brand/queries'
+import { useGetPosts } from '@/pages/data/queries'
+import { useGetLeads } from '@/pages/leads/queries'
+import { useGetDecisions, useGetIdeas, useGetSimilarPosts, useGetSuggestions } from '@/pages/suggestions/queries'
 
 export type AreaId = 'content' | 'brand' | 'leads' | 'sales' | 'outreach' | 'seo' | 'data'
 
@@ -113,23 +114,18 @@ function similarQuery(it: Item): { key: string; text: string; topic?: string | n
 
 export function useSimilarPosts(accountId: number | undefined, items: Item[]) {
   const queries = items.map(similarQuery).filter((q): q is NonNullable<typeof q> => q !== null)
-  return useQuery({
-    queryKey: ['similar', accountId ?? 0, queries],
-    queryFn: () => api.similarPosts({ account_id: accountId!, queries }),
-    enabled: !!accountId && queries.length > 0,
-    staleTime: 5 * 60_000,
-  })
+  return useGetSimilarPosts(accountId, queries)
 }
 
 export function useSuggestionItems(accountId: number | undefined) {
-  const sugg = useSuggestions(accountId)
-  const ideas = useIdeas(accountId)
-  const decisions = useDecisions(accountId)
+  const sugg = useGetSuggestions(accountId)
+  const ideas = useGetIdeas(accountId)
+  const decisions = useGetDecisions(accountId)
   const { accounts } = useAccount()
   const isCompany = accounts.find((a) => a.id === accountId)?.kind === 'company'
-  const checklist = useAccountDoc(isCompany ? accountId : undefined, 'page_checklist')
-  const posts = usePosts(accountId)
-  const leads = useLeads(accountId)
+  const checklist = useGetAccountDoc(isCompany ? accountId : undefined, 'page_checklist')
+  const posts = useGetPosts(accountId)
+  const leads = useGetLeads(accountId)
 
   const items = useMemo(() => {
     const byKey = new Map((decisions.data ?? []).map((d) => [d.key, d]))

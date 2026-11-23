@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Section } from '@/components/common'
-import { useSaveSettings } from '@/pages/settings/queries'
 import type { SegmentSettings } from '@/lib/api'
 import { SEGMENT_FIELDS } from '../constants'
 import { toText, toList } from '../utils'
+import { useSaveSettings } from '@/pages/settings/queries'
 
 export function AudienceTab({ current }: { current: SegmentSettings }) {
   const save = useSaveSettings()

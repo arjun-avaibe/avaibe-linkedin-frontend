@@ -21,7 +21,7 @@ import type {
   Shares,
   Snapshot,
   TeamMember,
-} from '@/lib/api'
+} from '@/types/api'
 import { DAY, HOUR, istIso, rng, slotOf, uaeDate, uaeHour, uaeIso, uaeMidnight, uaeWeekday, type Rng } from './util'
 
 export interface StoredPost extends PostSummary {

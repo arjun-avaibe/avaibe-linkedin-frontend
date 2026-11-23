@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { Block, TextBox } from './TextBlocks'
 import type { Draft, ChatEntry } from '../types'
 import { assistantText } from '../utils'
-import { usePostChat, usePostChatStatus } from '../queries'
+import { useGetPostChatStatus, useSendPostChat } from '@/pages/create-post/queries'
 
 export function ChatMode({
   accountId,
@@ -29,9 +29,9 @@ export function ChatMode({
   const [cost, setCost] = useState(0)
   const [web, setWeb] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
-  const status = usePostChatStatus(accountId)
+  const status = useGetPostChatStatus(accountId)
   const limit = status.data?.session_limit ?? 20
-  const send = usePostChat(accountId)
+  const send = useSendPostChat(accountId)
   const sendChat = (history: ChatEntry[]) =>
     send.mutate(
       {

@@ -835,3 +835,30 @@ export interface TimingModel {
   backtest?: TimingBacktest
   upcoming?: DateAdvice[]
 }
+
+export type SettingsSection = 'segments' | 'performance' | 'brand'
+export type PostAssistBody = {
+  account_id: number
+  format: string
+  caption: string
+  topic: string | null
+  industry: string | null
+  cta: string | null
+  goal?: PostGoal | null
+  focus: AnalysePart[]
+  scheduled_at: string | null
+  details: PlannedDetails
+  media_attached: boolean
+}
+export type PostChatBody = {
+  account_id: number
+  format: string
+  caption: string
+  topic: string | null
+  industry: string | null
+  cta: string | null
+  goal?: PostGoal | null
+  messages: { role: 'user' | 'assistant'; content: string }[]
+  web_search?: boolean
+}
+export type PostChatRun = Omit<PostAssistRun, 'result'> & { result: ChatTurn }

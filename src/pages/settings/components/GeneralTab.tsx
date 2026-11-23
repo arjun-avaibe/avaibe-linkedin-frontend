@@ -9,9 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Section, SimpleSelect } from '@/components/common'
 import { useAccount } from '@/context/account'
 import { useTz, ZONES, type ZoneId } from '@/context/timezone'
-import { useCreateAccount } from '@/pages/settings/queries'
 import type { Account } from '@/lib/api'
 import { KIND_LABELS } from '../constants'
+import { useCreateAccount } from '@/pages/settings/queries'
 
 export function GeneralTab() {
   const { accounts } = useAccount()

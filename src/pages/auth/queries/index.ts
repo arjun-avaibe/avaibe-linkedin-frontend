@@ -1,8 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { getMe } from '@/lib/api'
 
-export const meKey = ['auth', 'me'] as const
-
-export function useMe() {
-  return useQuery({ queryKey: meKey, queryFn: api.me, staleTime: 5 * 60_000, retry: 0 })
+export const useGetMe = () => {
+  return useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: getMe,
+    staleTime: 5 * 60_000,
+    retry: 0,
+  })
 }

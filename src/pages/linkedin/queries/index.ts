@@ -1,19 +1,30 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { keys } from '@/hooks/queries'
-import { api } from '@/lib/api'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { disconnectLinkedIn, getLinkedInAuthUrl, getLinkedInConfig, getLinkedInConnections } from '@/lib/api'
+import { queryClient } from '@/providers'
 
-export function useLinkedInConfig() {
-  return useQuery({ queryKey: ['linkedin', 'config'], queryFn: api.linkedinConfig })
+export const useGetLinkedInConfig = () => {
+  return useQuery({
+    queryKey: ['linkedin', 'config'],
+    queryFn: getLinkedInConfig,
+  })
 }
 
-export function useConnectLinkedIn() {
-  return useMutation({ mutationFn: (accountId: number) => api.linkedinAuthUrl(accountId) })
+export const useGetLinkedInConnections = () => {
+  return useQuery({
+    queryKey: ['linkedin', 'connections'],
+    queryFn: getLinkedInConnections,
+  })
 }
 
-export function useDisconnectLinkedIn() {
-  const qc = useQueryClient()
+export const useConnectLinkedIn = () => {
   return useMutation({
-    mutationFn: api.linkedinDisconnect,
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.linkedinConnections }),
+    mutationFn: getLinkedInAuthUrl,
+  })
+}
+
+export const useDisconnectLinkedIn = () => {
+  return useMutation({
+    mutationFn: disconnectLinkedIn,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['linkedin', 'connections'] }),
   })
 }

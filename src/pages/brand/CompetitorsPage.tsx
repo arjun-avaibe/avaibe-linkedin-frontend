@@ -6,16 +6,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, PageHeader } from '@/components/common'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
-import { useAccountDoc } from '@/hooks/queries'
-import { useSaveAccountDoc } from '@/pages/brand/queries'
 import type { Competitor } from '@/lib/api'
 import { CompetitorCard } from './components/CompetitorCard'
 import { CompetitorDialog } from './components/CompetitorDialog'
+import { useGetAccountDoc, useSaveAccountDoc } from '@/pages/brand/queries'
 
 export function CompetitorsPage() {
   const { account } = useAccount()
   const auth = useAuth()
-  const { data: doc, isLoading } = useAccountDoc(account?.id, 'competitors')
+  const { data: doc, isLoading } = useGetAccountDoc(account?.id, 'competitors')
   const save = useSaveAccountDoc(account?.id ?? 0, 'competitors')
   const [editing, setEditing] = useState<Competitor | 'new' | null>(null)
   const list = doc?.data.competitors ?? []

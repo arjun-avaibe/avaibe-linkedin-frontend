@@ -11,16 +11,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { todayUae } from '@/components/period'
 import { useAccount } from '@/context/account'
 import { isoToZonedInput, UAE, zonedInputToIso } from '@/context/timezone'
-import { usePosts } from '@/hooks/queries'
 import type { Lead, LeadInput, LeadSource, LeadStage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { SOURCE_LABEL, STAGE_LABEL, STAGES } from '../constants'
-import { useSaveLead } from '../queries'
 import { toInput } from '../utils'
+import { useGetPosts } from '@/pages/data/queries'
+import { useSaveLead } from '@/pages/leads/queries'
 
 export function LeadDialog({ accountId, initial, onClose }: { accountId: number; initial?: Lead; onClose: () => void }) {
   const { accounts, account } = useAccount()
-  const { data: posts = [] } = usePosts(accountId)
+  const { data: posts = [] } = useGetPosts(accountId)
   const save = useSaveLead(accountId)
   const root = account?.parent_id ?? account?.id
   const profiles = accounts.filter((a) => a.id === root || a.parent_id === root)

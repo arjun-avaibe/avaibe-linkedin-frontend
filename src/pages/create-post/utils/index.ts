@@ -1,5 +1,5 @@
 import { toast } from 'sonner'
-import { api, type PlannedFormat, type PlannedPost, type ChatTurn } from '@/lib/api'
+import { getPlannedImageUrl, getPlannedMediaUrl, type PlannedFormat, type PlannedPost, type ChatTurn } from '@/lib/api'
 import { fetchAsFile } from '@/lib/attachment'
 import type { Visual } from '../types'
 
@@ -31,7 +31,7 @@ export function visualFor(
         load: async () => file,
       }
     if (initial?.has_image && !removeImage) {
-      const url = api.plannedImageUrl(initial.id, initial.approved_at ?? 'x')
+      const url = getPlannedImageUrl(initial.id, initial.approved_at ?? 'x')
       return {
         key: `saved-image:${initial.id}`,
         name: 'the saved image',
@@ -55,7 +55,7 @@ export function visualFor(
         key: `saved-media:${initial.id}`,
         name,
         kind,
-        load: () => fetchAsFile(api.plannedMediaUrl(initial.id), name),
+        load: () => fetchAsFile(getPlannedMediaUrl(initial.id), name),
       }
     }
   }

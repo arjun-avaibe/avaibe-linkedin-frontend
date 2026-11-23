@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
-import { useGenerateIdeas } from '@/pages/suggestions/queries'
 import type { IdeasState } from '@/lib/api'
+import { useGenerateIdeas } from '@/pages/suggestions/queries'
 
 export function GenerateBar({ accountId, state }: { accountId: number; state: IdeasState | undefined }) {
   const auth = useAuth()

@@ -1,5 +1,5 @@
 import { ExternalLink, FileText, ListChecks } from 'lucide-react'
-import { api, type PlannedPost } from '@/lib/api'
+import { getPlannedMediaUrl, type PlannedPost } from '@/lib/api'
 import { DURATION_LABELS } from '@/pages/create-post/constants'
 
 export function FormatSummary({ p }: { p: PlannedPost }) {
@@ -38,7 +38,7 @@ export function FormatSummary({ p }: { p: PlannedPost }) {
         <FileText className="size-4 text-muted-foreground" />
         {d.document_title && <span className="font-medium">{d.document_title}</span>}
         {p.has_media ? (
-          <a href={api.plannedMediaUrl(p.id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs underline">
+          <a href={getPlannedMediaUrl(p.id)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs underline">
             {p.media_name ?? 'Open file'} <ExternalLink className="size-3" />
           </a>
         ) : (

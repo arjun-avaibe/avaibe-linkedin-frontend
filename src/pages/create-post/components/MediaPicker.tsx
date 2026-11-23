@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ExternalLink, Upload } from 'lucide-react'
-import { api, type PlannedPost } from '@/lib/api'
+import { getPlannedMediaUrl, type PlannedPost } from '@/lib/api'
 
 export function FilePreview({ file }: { file: File }) {
   const [url, setUrl] = useState<string | null>(null)
@@ -28,7 +28,7 @@ export function MediaPicker({
   return (
     <div>
       {current && !file && (
-        <a href={api.plannedMediaUrl(current.id)} target="_blank" rel="noreferrer" className="mb-2 inline-flex items-center gap-1 text-xs underline">
+        <a href={getPlannedMediaUrl(current.id)} target="_blank" rel="noreferrer" className="mb-2 inline-flex items-center gap-1 text-xs underline">
           Current file: {current.media_name ?? 'open'} <ExternalLink className="size-3" />
         </a>
       )}

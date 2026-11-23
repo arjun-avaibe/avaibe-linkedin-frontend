@@ -4,17 +4,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/common'
 import { TeamTab } from './components/TeamTab'
 import { useAuth } from '@/context/auth'
-import { useSettings } from '@/pages/settings/queries'
 import { AudienceTab } from './components/AudienceTab'
 import { ClaudeTab } from './components/ClaudeTab'
 import { GeneralTab } from './components/GeneralTab'
 import { PerformanceTab } from './components/PerformanceTab'
 import { TABS } from './constants'
+import { useGetSettings } from '@/pages/settings/queries'
 
 export function SettingsPage() {
   const [params, setParams] = useSearchParams()
   const tab = TABS.includes(params.get('tab') as (typeof TABS)[number]) ? params.get('tab')! : 'general'
-  const { data, isLoading } = useSettings()
+  const { data, isLoading } = useGetSettings()
   const auth = useAuth()
 
   if (params.get('tab') === 'brand') return <Navigate to="/settings?tab=claude" replace />

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SimpleSelect } from '@/components/common'
-import { api, type PlannedDetails, type PlannedFormat, type PlannedPost } from '@/lib/api'
+import { getPlannedImageUrl, type PlannedDetails, type PlannedFormat, type PlannedPost } from '@/lib/api'
 import { FilePreview, MediaPicker } from './MediaPicker'
 import { DURATION_LABELS } from '../constants'
 
@@ -28,7 +28,7 @@ export function FormatFields(props: {
         <Label className="mb-2 block font-semibold">Image</Label>
         {initial?.has_image && !removeImage && !file && (
           <div className="mb-2 flex items-center gap-3">
-            <img src={api.plannedImageUrl(initial.id, initial.approved_at ?? 'x')} alt="" className="size-16 rounded-lg object-cover" />
+            <img src={getPlannedImageUrl(initial.id, initial.approved_at ?? 'x')} alt="" className="size-16 rounded-lg object-cover" />
             <Button size="xs" variant="outline" onClick={() => setRemoveImage(true)}>
               Remove image
             </Button>

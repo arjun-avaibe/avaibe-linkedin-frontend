@@ -4,7 +4,7 @@ import { todayUae, ymd } from '@/components/period'
 import { isoToZonedInput, UAE, zonedInputToIso } from '@/context/timezone'
 import { dayAdvice, proven, SLOT_START, UAE_WEEKEND } from '@/lib/timing-advice'
 import { cn } from '@/lib/utils'
-import { useCalendar } from '@/hooks/queries'
+import { useGetCalendar } from '@/pages/calendar/queries'
 
 const TONE = { good: 'bg-good', note: 'bg-muted-foreground/50', quiet: 'bg-muted-foreground/25' } as const
 
@@ -22,7 +22,7 @@ export function PostingTimeHint({
   const today = todayUae()
   const uaeInput = scheduled ? isoToZonedInput(zonedInputToIso(scheduled, zone), UAE) : null
   const day = uaeInput ? uaeInput.slice(0, 10) : ymd(addDays(parseISO(today), 1))
-  const { data, isLoading } = useCalendar(accountId, day, day, { staleTime: 5 * 60_000 })
+  const { data, isLoading } = useGetCalendar(accountId, day, day, { staleTime: 5 * 60_000 })
 
   if (isLoading || !data) return <div className="h-16 animate-pulse rounded-lg bg-muted/50" />
 
