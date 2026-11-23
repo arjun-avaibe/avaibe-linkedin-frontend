@@ -7,33 +7,50 @@ The API is the separate **avaibe-linkedin-backend** repository (Django).
 
 ```powershell
 npm install
-npm run dev            # http://localhost:5173, forwards /api to http://127.0.0.1:8000
+npm run dev            # http://localhost:5173 with sample data: no backend or database needed
+npm run dev:api        # http://localhost:5173 with the backend: forwards /api to http://127.0.0.1:8000
 ```
 
 To point at another backend (for example the Test2 copy on port 8002):
 
 ```powershell
 $env:API_TARGET = 'http://127.0.0.1:8002'; $env:VITE_COPY_LABEL = 'Test2'
-npm run dev -- --port 5175 --strictPort
+npm run dev:api -- --port 5175 --strictPort
 ```
 
-## UI preview without the backend (mock mode)
+### Sample data (`npm run dev`)
 
-```powershell
-npm run dev:mock       # http://localhost:5173, no backend or database needed
+The api functions read sample data kept in the browser (`src/sample-data/`) instead of calling the backend,
+so every screen can be built and clicked through: demo sign-in, Dashboard, Data, Suggestions, Calendar,
+Publishing and Create post (approve → publish), Leads & sales, LinkedIn connect, Settings and Team.
+
+- Changes (new drafts, leads, settings…) stay in this browser and survive a reload. **Reset sample data** in the
+  yellow banner starts over.
+- Nothing is sent anywhere; the AI and LinkedIn features return ready-made answers. Imported files are not read.
+- `npm run build:sample` builds the same thing for hosting without a backend. `npm run build` (production) uses
+  the backend and leaves the sample data out entirely.
+- When an endpoint changes, update it in `src/lib/api/` (types, endpoint, function) and in `src/sample-data/index.ts`;
+  the type checker points at anything that no longer matches.
+
+## How the code is organised
+
+```
+src/
+  lib/api/            the API: types.ts, endpoints.ts (every address), client.ts (HTTP), http-api.ts (one function per endpoint)
+  hooks/queries.ts    React Query hooks shared by several pages (posts, analytics, planner, leads, calendar…)
+  pages/<page>/       one folder per page (Kutubi admin layout):
+    <Name>Page.tsx      the page
+    components/         its parts
+    queries/index.ts    its React Query hooks (screens never call the api directly)
+    constants/ utils/ hooks/ types.ts   when the page needs them
+  components/layout/  sidebar, top bar, page frame
+  components/ui/      shadcn/ui building blocks
+  routes/             every address; pages load on demand
+  sample-data/        the stand-in backend for `npm run dev`
 ```
 
-Every API call is answered in the browser from sample data (`src/mocks/`), so the whole app can be clicked
-through: demo sign-in, Dashboard, Data, Calendar, Create post → approve → publish, Leads, Pipeline,
-Suggestions and AI ideas (canned answers), LinkedIn connect, Settings and Team.
-
-- Changes (new drafts, leads, settings…) are kept in this browser's localStorage and survive a reload.
-  **Reset sample data** in the yellow banner starts over.
-- Nothing is sent anywhere; the AI and LinkedIn screens return made-up answers. File imports are not read.
-- `npm run build:mock` builds the same preview for hosting (e.g. a Vercel preview with no backend).
-  Normal builds (`npm run build`) never load the mock code.
-- When an endpoint changes in the backend, update its type in `src/lib/api.ts` and its handler in
-  `src/mocks/index.ts`; the type checker points at mismatches.
+Dashboard and Data (`pages/dashboard.tsx`, `pages/data.tsx` and the pages they include) still use the older flat
+layout; they move into folders when that work is finished.
 
 ## Host on Vercel
 
@@ -42,7 +59,7 @@ Suggestions and AI ideas (canned answers), LinkedIn connect, Settings and Team.
 3. `vercel.json` forwards `/api/...` to the backend on Render. If the Render service has another address,
    change it there, commit and push.
 
-The screens need the backend to show anything: every page loads its data from `/api`.
+A production build (`npm run build`) loads all data from `/api`; for a hosted copy without a backend use `npm run build:sample`.
 Hosting steps for the backend and database are in the backend repository's `DEPLOY.md`.
 
 ## Checks
