@@ -7,7 +7,6 @@ import { Button, buttonVariants } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
-import { useDecide } from '@/pages/suggestions/queries'
 import type { Item } from '@/hooks/suggestion-items'
 import type { DecisionStatus } from '@/lib/api'
 import { fmtNumber } from '@/lib/format'
@@ -16,12 +15,13 @@ import { RuleDetails, IdeaDetails } from './ItemDetails'
 import { SimilarLine, SimilarList } from './SimilarPosts'
 import { PRIORITY, IDEA_TYPE, STATUS_LABEL } from '../constants'
 import { SimilarCtx } from '../context/similar'
+import { useSaveDecision } from '@/pages/suggestions/queries'
 
 export function ItemCard({ item, accountId, highlight, muted }: { item: Item; accountId: number; highlight?: boolean; muted?: boolean }) {
   const [open, setOpen] = useState(false)
   const auth = useAuth()
   const tz = useTz()
-  const decide = useDecide(accountId)
+  const decide = useSaveDecision(accountId)
   const status = item.decision?.status
   const conf = item.rule ? item.rule.confidence.level : item.idea!.idea.confidence
   const progress = item.rule?.progress

@@ -11,17 +11,17 @@ import { type Lead } from '@/lib/api'
 import { FORMAT_LABELS, fmtNumber, fmtPct } from '@/lib/format'
 import { aed } from '@/pages/leads/utils'
 import { FROM_LINKEDIN, SOURCE_LABEL } from '@/pages/leads/constants'
-import { useLeads } from '@/pages/leads/queries'
 import { MoneyList } from './components/MoneyList'
 import { PERIODS } from './constants/periods'
 import { latestImpressions, latestClicks } from './utils/post-numbers'
-import { useAllPosts } from '@/hooks/queries'
+import { useGetAllPosts } from '@/pages/data/queries'
+import { useGetLeads } from '@/pages/leads/queries'
 
 export function ResultsPage() {
   const { account, accounts } = useAccount()
   const [period, setPeriod] = useState('90')
-  const { data: leads = [], isLoading: leadsLoading } = useLeads(account?.id)
-  const { data: allPosts = [], isLoading: postsLoading } = useAllPosts()
+  const { data: leads = [], isLoading: leadsLoading } = useGetLeads(account?.id)
+  const { data: allPosts = [], isLoading: postsLoading } = useGetAllPosts()
 
   const r = useMemo(() => {
     if (!account) return null

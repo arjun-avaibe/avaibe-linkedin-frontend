@@ -6,18 +6,19 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState, PageHeader, SimpleSelect } from '@/components/common'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
-import { useLinkedInConnections, usePlanned } from '@/hooks/queries'
 import { PLANNED_FORMATS, type PlannedFormat } from '@/lib/api'
 import { needsAction, PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { ConnectionBanner } from './components/ConnectionBanner'
 import { PlannedCard } from './components/PlannedCard'
 import { STATUS_FILTERS } from './constants'
+import { useGetLinkedInConnections } from '@/pages/linkedin/queries'
+import { useGetPlannedPosts } from '@/pages/publishing/queries'
 
 export function PublishingPage() {
   const { account } = useAccount()
   const auth = useAuth()
-  const { data: connections = [] } = useLinkedInConnections()
-  const { data: planned, isLoading } = usePlanned(account?.id)
+  const { data: connections = [] } = useGetLinkedInConnections()
+  const { data: planned, isLoading } = useGetPlannedPosts(account?.id)
   const connection = connections.find((c) => c.account_id === account?.id)
   const isCompany = account?.kind === 'company'
   const [params, setParams] = useSearchParams()

@@ -5,11 +5,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { type PlannedPost } from '@/lib/api'
 import { PLANNED_FORMAT_LABELS } from '@/lib/publishing'
-import { useMarkPosted } from '../queries'
+import { useMarkPlannedPosted } from '@/pages/publishing/queries'
 
 export function MarkPostedDialog({ p, accountId, onClose }: { p: PlannedPost; accountId: number; onClose: () => void }) {
   const [url, setUrl] = useState('')
-  const mark = useMarkPosted(accountId, p.id)
+  const mark = useMarkPlannedPosted(accountId, p.id)
   const submit = () =>
     mark.mutate(url.trim(), {
       onSuccess: () => {

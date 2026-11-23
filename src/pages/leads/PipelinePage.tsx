@@ -12,13 +12,13 @@ import { cn } from '@/lib/utils'
 import { LeadDialog } from './components/LeadDialog'
 import { Stat } from './components/Stat'
 import { SOURCE_LABEL, STAGE_LABEL, STAGES, STALE_DAYS } from './constants'
-import { useLeads, useSaveLead } from './queries'
 import { aed, daysSinceUpdate, isStale, toInput } from './utils'
+import { useGetLeads, useSaveLead } from '@/pages/leads/queries'
 
 export function PipelinePage() {
   const { account } = useAccount()
   const auth = useAuth()
-  const { data: leads = [], isLoading } = useLeads(account?.id)
+  const { data: leads = [], isLoading } = useGetLeads(account?.id)
   const save = useSaveLead(account?.id)
   const [editing, setEditing] = useState<Lead | null>(null)
 

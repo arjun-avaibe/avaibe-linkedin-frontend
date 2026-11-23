@@ -1,33 +1,32 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { keys } from '@/hooks/queries'
-import { api, type LeadInput } from '@/lib/api'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { createLead, deleteLead, getLeads, markLeadReplied, updateLead, type LeadInput } from '@/lib/api'
+import { queryClient } from '@/providers'
 
-export { useLeads } from '@/hooks/queries'
-
-export function useSaveLead(accountId?: number) {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, body }: { id?: number; body: LeadInput }) => (id ? api.updateLead(id, body) : api.createLead(body)),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.leads(accountId ?? 0) }),
-    onError: (e: Error) => toast.error(e.message),
+export const useGetLeads = (accountId: number | undefined) => {
+  return useQuery({
+    queryKey: ['leads', accountId],
+    queryFn: () => getLeads(accountId!),
+    enabled: !!accountId,
   })
 }
 
-export function useDeleteLead(accountId?: number) {
-  const qc = useQueryClient()
+export const useSaveLead = (accountId?: number) => {
   return useMutation({
-    mutationFn: (id: number) => api.deleteLead(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.leads(accountId ?? 0) }),
-    onError: (e: Error) => toast.error(e.message),
+    mutationFn: ({ id, body }: { id?: number; body: LeadInput }) => (id ? updateLead({ id, body }) : createLead(body)),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads', accountId] }),
   })
 }
 
-export function useMarkReplied(accountId?: number) {
-  const qc = useQueryClient()
+export const useDeleteLead = (accountId?: number) => {
   return useMutation({
-    mutationFn: (id: number) => api.leadReplied(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.leads(accountId ?? 0) }),
-    onError: (e: Error) => toast.error(e.message),
+    mutationFn: deleteLead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads', accountId] }),
+  })
+}
+
+export const useMarkLeadReplied = (accountId?: number) => {
+  return useMutation({
+    mutationFn: markLeadReplied,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads', accountId] }),
   })
 }

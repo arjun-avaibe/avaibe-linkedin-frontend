@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '@/context/auth'
-import { useAccounts } from '@/hooks/queries'
 import type { Account } from '@/lib/api'
+import { useGetAccounts } from '@/pages/settings/queries'
 
 interface AccountCtx {
   accounts: Account[]
@@ -27,7 +27,7 @@ function readStored(): number | null {
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const { signedIn, me } = useAuth()
-  const { data: accounts = [], isLoading, error } = useAccounts(signedIn)
+  const { data: accounts = [], isLoading, error } = useGetAccounts(signedIn)
   const [accountId, setId] = useState<number | null>(readStored)
 
   useEffect(() => {

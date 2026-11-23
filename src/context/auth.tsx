@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { api, ROLES, type Me, type Role } from '@/lib/api'
+import { logout, ROLES, type Me, type Role } from '@/lib/api'
 import { readDemoEmail, writeDemoEmail } from '@/lib/demo-session'
-import { useMe } from '@/pages/auth/queries'
+import { useGetMe } from '@/pages/auth/queries'
 
 interface AuthCtx {
   me: Me | undefined
@@ -22,7 +22,7 @@ const Ctx = createContext<AuthCtx | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient()
-  const { data: me, isLoading, error } = useMe()
+  const { data: me, isLoading, error } = useGetMe()
   const user = me?.user ?? null
   const [demoEmail, setDemoEmail] = useState<string | null>(readDemoEmail)
   const enabled = !!me?.enabled
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     can: (role) => !!user && ROLES.indexOf(user.role) >= ROLES.indexOf(role),
     canSwitch: !!user?.can_switch_accounts,
     signOut: async () => {
-      if (enabled) await api.logout()
+      if (enabled) await logout()
       writeDemoEmail(null)
       setDemoEmail(null)
       qc.clear()

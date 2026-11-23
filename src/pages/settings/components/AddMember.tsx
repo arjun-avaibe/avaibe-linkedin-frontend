@@ -7,14 +7,14 @@ import { Label } from '@/components/ui/label'
 import { Section, SimpleSelect } from '@/components/common'
 import { type Role } from '@/lib/api'
 import { ROLE_OPTIONS } from './TeamTab'
-import { useAddMember } from '../queries'
+import { useAddTeamMember } from '@/pages/settings/queries'
 
-export function AddMember({ onAdded }: { onAdded: () => void }) {
+export function AddMember() {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [role, setRole] = useState<Role>('viewer')
   const [canSwitch, setCanSwitch] = useState(false)
-  const add = useAddMember()
+  const add = useAddTeamMember()
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -27,7 +27,6 @@ export function AddMember({ onAdded }: { onAdded: () => void }) {
           setName('')
           setRole('viewer')
           setCanSwitch(false)
-          onAdded()
         },
         onError: (e) => toast.error(e.message),
       },

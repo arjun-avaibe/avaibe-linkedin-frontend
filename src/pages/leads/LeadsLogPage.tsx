@@ -18,16 +18,16 @@ import { Sources } from './components/LeadSources'
 import { StageTag } from './components/StageTag'
 import { Stat } from './components/Stat'
 import { SOURCE_LABEL, FROM_LINKEDIN, REPLY_TARGET_HOURS } from './constants'
-import { useLeads, useDeleteLead, useMarkReplied } from './queries'
 import { replyHours, fmtHours, sourceKnown, yesNo } from './utils'
+import { useDeleteLead, useGetLeads, useMarkLeadReplied } from '@/pages/leads/queries'
 
 export function LeadsLogPage() {
   const { account } = useAccount()
   const auth = useAuth()
-  const { data: leads = [], isLoading } = useLeads(account?.id)
+  const { data: leads = [], isLoading } = useGetLeads(account?.id)
   const [editing, setEditing] = useState<Lead | 'new' | null>(null)
   const del = useDeleteLead(account?.id)
-  const replied = useMarkReplied(account?.id)
+  const replied = useMarkLeadReplied(account?.id)
 
   if (!account) return null
   const n = leads.length

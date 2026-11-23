@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { PostRef } from '@/components/common'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
-import { api, ApiError, type LinkedInConnection, type PlannedPost, POST_GOALS } from '@/lib/api'
+import { getPlannedImageUrl, ApiError, type LinkedInConnection, type PlannedPost, POST_GOALS } from '@/lib/api'
 import { dueByHand, PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 import { ApproveDialog } from './ApproveDialog'
@@ -17,7 +17,7 @@ import { MarkPostedDialog } from './MarkPostedDialog'
 import { STATUS } from '../constants'
 import { useMinutesLeft } from '../hooks/useMinutesLeft'
 import { plural, copyText } from '../utils'
-import { useDeletePlanned, usePlannedAction, useSchedulePlanned } from '../queries'
+import { useDeletePlannedPost, usePlannedPostAction, useSchedulePlannedPost } from '@/pages/publishing/queries'
 
 export function PlannedCard({
   p,
@@ -38,9 +38,9 @@ export function PlannedCard({
   const [confirmPublish, setConfirmPublish] = useState(false)
   const [reviewing, setReviewing] = useState(false)
   const [markPosted, setMarkPosted] = useState(false)
-  const action = usePlannedAction(accountId, p.id)
-  const remove = useDeletePlanned(accountId, p.id)
-  const schedule = useSchedulePlanned(accountId, p.id)
+  const action = usePlannedPostAction(accountId, p.id)
+  const remove = useDeletePlannedPost(accountId, p.id)
+  const schedule = useSchedulePlannedPost(accountId, p.id)
   const unpublished = p.status === 'draft' || p.status === 'failed' || p.status === 'missed'
   const editable = unpublished || p.status === 'approved'
   const auth = useAuth()
@@ -171,7 +171,7 @@ export function PlannedCard({
 
       <div className="mt-3 flex gap-4">
         {p.has_image && (
-          <img src={api.plannedImageUrl(p.id, p.approved_at ?? p.id.toString())} alt={p.image_alt ?? ''} className="size-24 shrink-0 rounded-md object-cover ring-1 ring-foreground/10" />
+          <img src={getPlannedImageUrl(p.id, p.approved_at ?? p.id.toString())} alt={p.image_alt ?? ''} className="size-24 shrink-0 rounded-md object-cover ring-1 ring-foreground/10" />
         )}
         <p className="line-clamp-5 text-sm whitespace-pre-wrap">{p.caption}</p>
       </div>

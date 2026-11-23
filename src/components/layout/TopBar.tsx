@@ -25,10 +25,11 @@ import { UserAvatar } from '@/components/layout/UserAvatar'
 import { todayUae, ymd } from '@/components/period'
 import { useAccount } from '@/context/account'
 import { useAuth } from '@/context/auth'
-import { useCalendarItems, usePlanned } from '@/hooks/queries'
 import { removeProfilePhoto, saveProfilePhoto, useMe } from '@/lib/me'
 import { dueByHand } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
+import { useGetCalendarItems } from '@/pages/calendar/queries'
+import { useGetPlannedPosts } from '@/pages/publishing/queries'
 
 export function TopBar() {
   const auth = useAuth()
@@ -69,10 +70,10 @@ function readSeen(): string[] {
 
 function useNotes(): Note[] {
   const { account } = useAccount()
-  const { data: planned = [] } = usePlanned(account?.id)
+  const { data: planned = [] } = useGetPlannedPosts(account?.id)
   const today = todayUae()
   const until = ymd(addDays(parseISO(today), 7))
-  const { data: cal } = useCalendarItems(today, until)
+  const { data: cal } = useGetCalendarItems(today, until)
 
   return useMemo(() => {
     const notes: Note[] = []

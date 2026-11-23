@@ -2,8 +2,8 @@ import { toast } from 'sonner'
 import { Link2, Unlink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { useConnectLinkedIn, useDisconnectLinkedIn } from '../queries'
 import { type Account, type LinkedInConnection } from '@/lib/api'
+import { useConnectLinkedIn, useDisconnectLinkedIn } from '@/pages/linkedin/queries'
 
 export function ConnectionCell({ account, connection, configured }: { account: Account; connection?: LinkedInConnection; configured: boolean }) {
   const disconnect = useDisconnectLinkedIn()

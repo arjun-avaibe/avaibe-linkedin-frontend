@@ -10,7 +10,6 @@ import { SimpleSelect, BackButton, PostRef } from '@/components/common'
 import { PostingTimeHint } from './PostingTimeHint'
 import { useAuth } from '@/context/auth'
 import { isoToZonedInput, UAE, useTz, zonedInputToIso, zoneLabel } from '@/context/timezone'
-import { useSavePlannedPost } from '../queries'
 import { PLANNED_FORMATS, type PlannedDetails, type PlannedFormat, type PlannedPost, type PlannedPostInput, type PostGoal, POST_GOALS } from '@/lib/api'
 import { PLANNED_FORMAT_LABELS } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
@@ -20,6 +19,7 @@ import { IconTile } from './IconTile'
 import { PreviewDialog } from './PreviewDialog'
 import { MAX_CHARS, GOAL_ICON, FORMAT_ICON } from '../constants'
 import { visualFor } from '../utils'
+import { useSavePlannedPost } from '@/pages/create-post/queries'
 
 export function Editor({ accountId, accountName, initial }: { accountId: number; accountName: string; initial?: PlannedPost }) {
   const tz = useTz()

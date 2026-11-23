@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Section } from '@/components/common'
 import { useAuth } from '@/context/auth'
-import { useSaveSettings } from '@/pages/settings/queries'
 import type { BrandSettings } from '@/lib/api'
+import { useSaveSettings } from '@/pages/settings/queries'
 
 type BrandList = 'services' | 'target_segments' | 'differentiators' | 'proof_points' | 'avoid' | 'languages'
 

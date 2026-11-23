@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Section } from '@/components/common'
-import { useSaveSettings } from '@/pages/settings/queries'
 import type { PerformanceSettings } from '@/lib/api'
+import { useSaveSettings } from '@/pages/settings/queries'
 
 export function PerformanceTab({ current, defaults }: { current: PerformanceSettings; defaults: PerformanceSettings }) {
   const save = useSaveSettings()

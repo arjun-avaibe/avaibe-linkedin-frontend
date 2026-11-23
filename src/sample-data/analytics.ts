@@ -24,8 +24,8 @@ import type {
   TimingModel,
   Trend,
   WindowStats,
-} from '@/lib/api'
-import { CHECKPOINTS } from '@/lib/api'
+} from '@/types/api'
+import { CHECKPOINTS } from '@/types/api'
 import { CHECKPOINT_HOURS, type MockDb, type StoredPost } from './seed'
 import { addDays, DAY, HEAT_DAYS, HOUR, median, round, SLOTS, sum, uaeDate, uaeMidnight, uaeTime, uaeWeekday } from './util'
 

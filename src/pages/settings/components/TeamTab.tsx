@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Star, Trash2, Users } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -11,8 +10,7 @@ import { useAccount } from '@/context/account'
 import { useTz } from '@/context/timezone'
 import { ROLES, type Role, type TeamMember, type TeamMemberInput } from '@/lib/api'
 import { AddMember } from './AddMember'
-import { keys } from '@/hooks/queries'
-import { useRemoveMember, useSetDefaultAccount, useTeam, useUpdateMember } from '../queries'
+import { useGetTeam, useRemoveTeamMember, useSetDefaultAccount, useUpdateTeamMember } from '@/pages/settings/queries'
 
 export const ROLE_OPTIONS = ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))
 
@@ -20,11 +18,9 @@ export function TeamTab() {
   const auth = useAuth()
   const tz = useTz()
   const { accounts } = useAccount()
-  const { data, isLoading } = useTeam()
-  const qc = useQueryClient()
-  const refresh = () => qc.invalidateQueries({ queryKey: keys.team })
-  const update = useUpdateMember()
-  const remove = useRemoveMember()
+  const { data, isLoading } = useGetTeam()
+  const update = useUpdateTeamMember()
+  const remove = useRemoveTeamMember()
   const setDefault = useSetDefaultAccount()
   const onError = (e: Error) => toast.error(e.message)
 
@@ -130,7 +126,7 @@ export function TeamTab() {
         </ul>
       </Section>
 
-      <AddMember onAdded={refresh} />
+      <AddMember />
 
       <Section icon={Star}
         title="Default account"

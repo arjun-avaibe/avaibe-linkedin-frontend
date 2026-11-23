@@ -7,7 +7,7 @@ import { ChatMode } from './ChatMode'
 import { VisualChip } from './VisualChip'
 import { MODES } from '../constants'
 import type { Draft, Visual } from '../types'
-import { usePostAssistStatus } from '../queries'
+import { useGetPostAssistStatus } from '@/pages/create-post/queries'
 
 export function AiPanel({
   accountId,
@@ -36,7 +36,7 @@ export function AiPanel({
       }
     return prepared.current.file
   }
-  const status = usePostAssistStatus(accountId)
+  const status = useGetPostAssistStatus(accountId)
   return (
     <section className="rounded-[1.8rem] bg-card">
       <header className="flex flex-wrap items-start gap-3 px-6 pt-5">

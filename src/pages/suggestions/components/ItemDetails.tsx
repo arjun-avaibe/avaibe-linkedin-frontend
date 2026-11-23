@@ -4,9 +4,9 @@ import { toast } from 'sonner'
 import { ArrowDownRight, ArrowUpRight, CheckCircle2, CircleAlert, Clock3, Copy, FilePlus2, Lightbulb, type LucideIcon, Users } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { useAuth } from '@/context/auth'
-import { useIdeaToDraft } from '@/pages/suggestions/queries'
 import type { Idea, Suggestion } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useCreateDraftFromIdea } from '@/pages/suggestions/queries'
 
 export function RuleDetails({ s }: { s: Suggestion }) {
   return (
@@ -24,7 +24,7 @@ export function RuleDetails({ s }: { s: Suggestion }) {
 
 export function IdeaDetails({ idea, runId, index, accountId }: { idea: Idea; runId: number; index: number; accountId: number }) {
   const auth = useAuth()
-  const toDraft = useIdeaToDraft(accountId)
+  const toDraft = useCreateDraftFromIdea(accountId)
   const [draftId, setDraftId] = useState<number | null>(null)
 
   const copy = async () => {

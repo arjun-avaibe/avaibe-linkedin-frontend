@@ -11,7 +11,7 @@ import { Block, TextBox } from './TextBlocks'
 import { FORMAT_ICON, FIX_ICON, VISUAL_LABEL } from '../constants'
 import { useParts } from '../hooks/useParts'
 import type { Draft, Visual } from '../types'
-import { useAnalysePost, usePostAssistStatus } from '../queries'
+import { useAnalysePost, useGetPostAssistStatus } from '@/pages/create-post/queries'
 
 export function AnalyseMode({
   accountId,
@@ -40,7 +40,7 @@ export function AnalyseMode({
     cost: number
     format: PlannedFormat
   } | null>(null)
-  const status = usePostAssistStatus(accountId)
+  const status = useGetPostAssistStatus(accountId)
   const run = useAnalysePost(accountId)
   const analyse = () =>
     run.mutate(

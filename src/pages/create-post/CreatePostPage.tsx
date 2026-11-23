@@ -1,13 +1,13 @@
 import { Link, useParams } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAccount } from '@/context/account'
-import { usePlanned } from '@/hooks/queries'
 import { Editor } from './components/Editor'
+import { useGetPlannedPosts } from '@/pages/publishing/queries'
 
 export function CreatePostPage() {
   const { id } = useParams()
   const { account } = useAccount()
-  const { data: planned, isLoading } = usePlanned(account?.id)
+  const { data: planned, isLoading } = useGetPlannedPosts(account?.id)
   const editing = id ? planned?.find((p) => p.id === Number(id)) : undefined
 
   if (!account) return null
