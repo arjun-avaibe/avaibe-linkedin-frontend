@@ -221,8 +221,8 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
       {/* Breadcrumb and title */}
       <nav className="mb-1 flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
         {(initial || params.get('from') === 'calendar') && <BackButton fallback={params.get('from') === 'calendar' ? '/calendar' : '/publishing'} />}
-        <Link to="/publishing" className="hover:text-foreground">
-          {initial ? 'Publishing' : 'Content'}
+        <Link to={params.get('from') === 'calendar' ? '/calendar' : '/publishing'} className="hover:text-foreground">
+          {params.get('from') === 'calendar' ? 'Calendar' : 'Publishing'}
         </Link>
         <ChevronRight className="size-3.5" />
         <span className="text-foreground">{initial ? 'Edit post' : 'Create post'}</span>

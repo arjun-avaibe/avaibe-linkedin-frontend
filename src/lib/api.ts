@@ -1,4 +1,5 @@
 // Typed client for the FastAPI backend. In dev, Vite proxies /api to :8000.
+import { mockFileUrl } from '@/mocks/files'
 
 // 'untagged': imported from a LinkedIn export that didn't say what kind of post it was
 export const FORMATS = ['image', 'carousel', 'video', 'poll', 'newsletter', 'text', 'untagged'] as const
@@ -918,7 +919,16 @@ function toForm(body: Record<string, unknown>, file: File): FormData {
   return form
 }
 
+/**
+ * Mock mode (npm run dev:mock): no backend at all. Every call below is answered in the browser from sample data,
+ * so the whole UI can be built and clicked through while the API is still being written.
+ * The mock code is only loaded in this mode; normal builds never download it.
+ */
+export const MOCK_API = import.meta.env.MODE === 'mock' || import.meta.env.VITE_MOCK_API === '1'
+const mockBackend = MOCK_API ? import('@/mocks') : null
+
 async function request<T>(method: string, path: string, opts: { params?: Params; body?: unknown; form?: FormData } = {}): Promise<T> {
+  if (mockBackend) return (await mockBackend).mockRequest<T>(method, path, opts)
   const init: RequestInit = { method }
   if (opts.form) {
     init.body = opts.form
@@ -1050,9 +1060,10 @@ export const api = {
     return request<PlannedPost>('POST', `/planner/${id}/media`, { form })
   },
   removePlannedMedia: (id: number) => request<PlannedPost>('DELETE', `/planner/${id}/media`),
-  plannedMediaUrl: (id: number) => `/api/planner/${id}/media`,
+  plannedMediaUrl: (id: number) => (MOCK_API ? mockFileUrl('media', id) : `/api/planner/${id}/media`),
   markPosted: (id: number, postUrl: string) => request<PlannedPost>('POST', `/planner/${id}/mark-posted`, { body: { post_url: postUrl } }),
-  plannedImageUrl: (id: number, bust?: string) => `/api/planner/${id}/image${bust ? `?v=${encodeURIComponent(bust)}` : ''}`,
+  plannedImageUrl: (id: number, bust?: string) =>
+    MOCK_API ? mockFileUrl('image', id) : `/api/planner/${id}/image${bust ? `?v=${encodeURIComponent(bust)}` : ''}`,
 
   importCsv: (accountId: number, file: File) => {
     const form = new FormData()

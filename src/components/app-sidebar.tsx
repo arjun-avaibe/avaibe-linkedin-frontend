@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import {
   CalendarDays,
   Check,
@@ -13,7 +13,6 @@ import {
   Lightbulb,
   Send,
   Settings,
-  SquarePen,
   Swords,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth'
@@ -30,9 +29,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
 import {
   DropdownMenu,
@@ -44,7 +40,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAccount } from '@/context/account'
 import { usePlanned } from '@/hooks/queries'
-import { SUGGESTION_AREAS, useSuggestionItems } from '@/hooks/suggestion-items'
+import { useSuggestionItems } from '@/hooks/suggestion-items'
 import { needsAction } from '@/lib/publishing'
 import { cn } from '@/lib/utils'
 import { HelpDialog } from '@/components/help-dialog'
@@ -58,8 +54,10 @@ const OVERVIEW: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, role: 'viewer' },
   { to: '/data', label: 'Data', icon: Database, role: 'viewer' },
 ]
+// Content follows the work: Suggestions (what to post) → Calendar (when) → Publishing (write, approve, post).
+// Create post opens from Publishing → New post (or a calendar day), so it has no item of its own.
 const CONTENT: NavItem[] = [
-  { to: '/create', label: 'Create post', icon: SquarePen, role: 'editor' },
+  { to: '/suggestions/content', label: 'Suggestions', icon: Lightbulb, role: 'viewer' },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays, role: 'viewer' },
   { to: '/publishing', label: 'Publishing', icon: Send, role: 'viewer' },
 ]
@@ -94,38 +92,24 @@ export function AppSidebar() {
   const { counts } = useSuggestionItems(account?.id)
   const { data: planned = [] } = usePlanned(account?.id)
   const publishingWaiting = planned.filter(needsAction).length
-  // Brand, Leads and Sales suggestions are counted in their own sections, not under Suggestions
-  const suggestionCount = SUGGESTION_AREAS.reduce((n, a) => n + counts[a.id], 0)
+  // Content suggestions only: Brand, Leads and Sales are counted in their own sections
+  const suggestionCount = counts.content
   const auth = useAuth()
-  const navigate = useNavigate()
   const [help, setHelp] = useState(false)
   const brand = useFoldingSection('/brand')
   const leads = useFoldingSection('/leads')
   const sales = useFoldingSection('/sales')
-  const inSuggestions = pathname.startsWith('/suggestions')
-  // The area list folds open on the Suggestions pages; clicking the heading there opens/closes it
-  const [manualOpen, setManualOpen] = useState<boolean | null>(null)
-  const suggestionsOpen = inSuggestions && (manualOpen ?? true)
-  const toggleSuggestions = () => {
-    if (!inSuggestions) {
-      setManualOpen(null)
-      navigate('/suggestions/content')
-    } else setManualOpen(!suggestionsOpen)
-  }
-
   const fromCalendar = new URLSearchParams(search).get('from') === 'calendar'
-  const isActive = (to: string) =>
-    to === '/'
-      ? pathname === '/'
-      : to === '/data'
-        ? pathname.startsWith('/data') || pathname.startsWith('/import') || pathname.startsWith('/posts') // Import and Posts live inside Data now
-        : to === '/create'
-          ? pathname === '/create' && !fromCalendar // Edit post (/create/<id>) is opened from Publishing, so Publishing stays lit
-          : to === '/publishing'
-            ? pathname.startsWith('/publishing') || (pathname.startsWith('/create/') && !fromCalendar)
-            : to === '/calendar'
-              ? pathname.startsWith('/calendar') || (pathname.startsWith('/create') && fromCalendar) // opened from a calendar day
-              : pathname.startsWith(to)
+  const isActive = (to: string) => {
+    if (to === '/') return pathname === '/'
+    // Import and Posts live inside Data now
+    if (to === '/data') return pathname.startsWith('/data') || pathname.startsWith('/import') || pathname.startsWith('/posts')
+    if (to === '/suggestions/content') return pathname.startsWith('/suggestions')
+    // New / Edit post open from Publishing, or from a calendar day
+    if (to === '/publishing') return pathname.startsWith('/publishing') || (pathname.startsWith('/create') && !fromCalendar)
+    if (to === '/calendar') return pathname.startsWith('/calendar') || (pathname.startsWith('/create') && fromCalendar)
+    return pathname.startsWith(to)
+  }
 
   const renderItems = (items: NavItem[]) =>
     items
@@ -140,6 +124,9 @@ export function AppSidebar() {
             <item.icon />
             <span>{item.label}</span>
           </SidebarMenuButton>
+          {item.to === '/suggestions/content' && suggestionCount > 0 && (
+            <SidebarMenuBadge title="Suggestions needing attention">{suggestionCount}</SidebarMenuBadge>
+          )}
           {item.to === '/publishing' && publishingWaiting > 0 && (
             <span
               aria-label={`${publishingWaiting} posts need action`}
@@ -167,7 +154,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Content</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{renderItems(CONTENT)}</SidebarMenu>
+            <SidebarMenu>
+              {renderItems(CONTENT)}
+            </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
@@ -195,49 +184,6 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Insights</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton isActive={inSuggestions && !suggestionsOpen} tooltip="Suggestions" onClick={toggleSuggestions}>
-                  <Lightbulb />
-                  <span>Suggestions</span>
-                  <ChevronRight className={cn('ml-auto transition-transform group-data-[collapsible=icon]:hidden', suggestionsOpen && 'rotate-90')} />
-                </SidebarMenuButton>
-                {!suggestionsOpen && suggestionCount > 0 && (
-                  <SidebarMenuBadge title="Suggestions needing attention" className="right-7">
-                    {suggestionCount}
-                  </SidebarMenuBadge>
-                )}
-                {suggestionsOpen && (
-                  <SidebarMenuSub>
-                    {SUGGESTION_AREAS.map((a) => (
-                      <SidebarMenuSubItem key={a.id}>
-                        <SidebarMenuSubButton isActive={pathname === `/suggestions/${a.id}`} render={<NavLink to={`/suggestions/${a.id}`} />}>
-                          <span>{a.label}</span>
-                        </SidebarMenuSubButton>
-                        {counts[a.id] > 0 && (
-                          <span className="pointer-events-none absolute top-1 right-1 text-xs text-muted-foreground tabular-nums">{counts[a.id]}</span>
-                        )}
-                      </SidebarMenuSubItem>
-                    ))}
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        size="sm"
-                        isActive={pathname === '/suggestions/planned'}
-                        render={<NavLink to="/suggestions/planned" />}
-                        className="text-muted-foreground"
-                      >
-                        <span>Planned features</span>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                )}
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       <SidebarFooter>

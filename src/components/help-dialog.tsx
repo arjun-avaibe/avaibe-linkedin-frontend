@@ -11,8 +11,9 @@ const SECTIONS: { title: string; items: [string, string][] }[] = [
     items: [
       ['Dashboard', 'A quick read of the period: headline numbers, best posts, who your audience is and what needs doing.'],
       ['Data', 'The detail: every post (Posts), page totals and the chart (Content), page visitors and followers. Import LinkedIn’s export from the Posts tab.'],
-      ['Create post', 'Write, check and schedule a post. The AI (Analyse, Chat) only runs when you click. Tick what Analyse should check; for image, video and carousel posts it can also write the prompt to paste into an outside tool such as Seedream or Seedance, then you upload the result.'],
-      ['Calendar · Publishing', 'Calendar: posts, holidays and events by day. Publishing: posts are unpublished, scheduled or published. Approve opens a preview where you publish now or at the post’s time; hand-posted formats are marked as posted.'],
+      ['Suggestions', 'What to post next, by area (Content, Outreach, SEO / AEO, Data fixes), from your own numbers and, when you click Generate ideas, from Claude.'],
+      ['Calendar', 'Posts, holidays and events by day, with the best times to post. Click a day to plan a post for it.'],
+      ['Publishing', 'Every post, unpublished, scheduled or published. New post opens the editor: write and check it (the AI, Analyse and Chat, only runs when you click), then approve to preview and publish now or at its time. Hand-posted formats are marked as posted.'],
       ['Brand · Leads · Sales', 'Suggestions for each, plus Competitors, the Leads log and the Pipeline. Leads are entered by the team: LinkedIn doesn’t share enquiries.'],
     ],
   },
