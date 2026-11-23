@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, ExternalLink, GitCompareArrows, Plus, Search } from 'lucide-react'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -81,7 +81,7 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
   }
 
   return (
-    <div className={embedded ? '' : 'mx-auto max-w-7xl'}>
+    <div className={embedded ? '' : 'mx-auto max-w-page'}>
       {!embedded && <PageHeader
         title="Posts"
         description="Every post with its numbers so far. â€œvs typicalâ€ compares each post with this accountâ€™s usual post at the same age."

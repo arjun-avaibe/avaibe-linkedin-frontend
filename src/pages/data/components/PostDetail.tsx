@@ -35,7 +35,7 @@ export function PostDetail({ post }: { post: Post }) {
   const published = new Date(post.published_at).getTime()
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-page">
       <PageHeader eyebrow="Data"
         back="/data?tab=posts"
         title={post.topic ?? post.ref ?? `Post ${post.id}`}

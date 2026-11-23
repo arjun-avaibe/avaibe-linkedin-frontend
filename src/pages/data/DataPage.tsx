@@ -71,7 +71,7 @@ export function DataPage() {
   const compareLabel = comparisonLabel(stats, cmp)
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-page">
       <PageHeader
         eyebrow="Overview"
         title="Data"
