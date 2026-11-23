@@ -120,12 +120,17 @@ function Stat({ label, value, hint }: { label: string; value: string; hint?: str
 
 // ---------------------------------------------------------------- suggestions pages
 
+/** Leads & sales › Suggestions: bringing in enquiries and turning them into won business, in one list */
 export function LeadSuggestionsPage() {
-  return <AreaPage areaId="leads" eyebrow="Leads" title="Lead suggestions" />
-}
-
-export function SalesSuggestionsPage() {
-  return <AreaPage areaId="sales" eyebrow="Sales" title="Sales suggestions" />
+  return (
+    <AreaPage
+      areaId="leads"
+      also={['sales']}
+      eyebrow="Leads & sales"
+      title="Suggestions"
+      description="Bringing in enquiries from the right people (UAE decision-makers, not just likes) and turning them into won business."
+    />
+  )
 }
 
 // ---------------------------------------------------------------- Leads log
@@ -149,9 +154,9 @@ export function LeadsLogPage() {
   const waiting = leads.filter((l) => !l.replied_at && l.stage !== 'lost' && l.stage !== 'won').length
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-page">
       <PageHeader
-        eyebrow="Leads"
+        eyebrow="Leads & sales"
         title="Leads log"
         description="Every enquiry, where it came from and who it’s from. LinkedIn doesn’t share enquiries, so the team records them here. Company, role and source only: no personal names or contact details."
         actions={
@@ -386,9 +391,9 @@ export function PipelinePage() {
   const move = (l: Lead, stage: LeadStage) => save.mutate({ id: l.id, body: { ...toInput(l), stage, closed_on: null } })
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-page">
       <PageHeader
-        eyebrow="Sales"
+        eyebrow="Leads & sales"
         title="Pipeline"
         description="Each lead from the Leads log, by stage. Move a lead when it progresses; won and lost leads show which sources turn into business."
         actions={

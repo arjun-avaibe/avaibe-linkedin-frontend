@@ -107,7 +107,7 @@ export function DataPage() {
   const compareLabel = stats ? `vs previous ${stats.len} days` : ''
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-page">
       <PageHeader
         eyebrow="Overview"
         title="Data"
@@ -292,7 +292,7 @@ function VisitorsTab({ accountId, daily, win, stats, dates, compareLabel, posts 
                 { label: 'Unique visitors', value: visitors },
                 { label: 'Leads logged', value: inWin.length, to: '/leads/log' },
                 { label: 'Qualified', value: inWin.filter((l) => l.is_qualified).length, to: '/leads/log' },
-                { label: 'Won', value: inWin.filter((l) => l.stage === 'won').length, to: '/sales/pipeline' },
+                { label: 'Won', value: inWin.filter((l) => l.stage === 'won').length, to: '/leads/pipeline' },
               ]}
             />
             <p className="mt-4 text-xs text-muted-foreground">

@@ -31,7 +31,7 @@ const CHECKPOINT_HOURS: Record<Checkpoint, number> = { '1h': 1, '6h': 6, '24h': 
 export function PostDetailPage() {
   const id = Number(useParams().id)
   const { data: post, isLoading, error } = usePost(id)
-  if (isLoading) return <Skeleton className="mx-auto h-96 max-w-6xl" />
+  if (isLoading) return <Skeleton className="mx-auto h-96 max-w-page" />
   if (error || !post) return <EmptyState>Post not found. <Link to="/posts" className="underline">Back to posts</Link></EmptyState>
   return <PostDetail post={post} />
 }
@@ -52,7 +52,7 @@ function PostDetail({ post }: { post: Post }) {
   const published = new Date(post.published_at).getTime()
 
   return (
-    <div className="mx-auto max-w-6xl">
+    <div className="mx-auto max-w-page">
       <PageHeader eyebrow="Data"
         back="/data?tab=posts"
         title={post.topic ?? post.ref ?? `Post ${post.id}`}

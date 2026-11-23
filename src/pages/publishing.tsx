@@ -89,7 +89,7 @@ export function PublishingPage() {
   if (!account) return null
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4">
+    <div className="mx-auto max-w-page space-y-4">
       <PageHeader eyebrow="Content"
         title="Publishing"
         description="Preview a post, then publish it now or at its scheduled time. Text and image posts are published by the app; carousel, video, article and poll posts are posted on LinkedIn by hand, then marked as posted."

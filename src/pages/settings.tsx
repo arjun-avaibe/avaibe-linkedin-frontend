@@ -41,7 +41,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-page">
       <PageHeader eyebrow="Workspace" title="Settings" description="How the app defines your audience, judges performance, and connects to other services." />
       <Tabs value={tab} onValueChange={(v) => setParams({ tab: String(v) }, { replace: true })}>
         <TabsList className="flex-wrap">

@@ -130,7 +130,7 @@ export function CalendarPage() {
   const linked = (data?.accounts ?? []).filter((a) => a.id !== account.id)
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-page">
       <PageHeader
         eyebrow="Content"
         title="Calendar"

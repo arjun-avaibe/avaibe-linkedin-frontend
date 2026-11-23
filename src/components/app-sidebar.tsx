@@ -65,13 +65,11 @@ const BRAND: NavItem[] = [
   { to: '/brand/suggestions', label: 'Brand suggestions', icon: Lightbulb, role: 'viewer' },
   { to: '/brand/competitors', label: 'Competitors', icon: Swords, role: 'viewer' },
 ]
+// Leads and Sales are one section: the Leads log and the Pipeline are the same leads, listed vs by stage
 const LEADS: NavItem[] = [
-  { to: '/leads/suggestions', label: 'Lead suggestions', icon: Lightbulb, role: 'viewer' },
+  { to: '/leads/suggestions', label: 'Suggestions', icon: Lightbulb, role: 'viewer' },
   { to: '/leads/log', label: 'Leads log', icon: Inbox, role: 'viewer' },
-]
-const SALES: NavItem[] = [
-  { to: '/sales/suggestions', label: 'Sales suggestions', icon: Lightbulb, role: 'viewer' },
-  { to: '/sales/pipeline', label: 'Pipeline', icon: Kanban, role: 'viewer' },
+  { to: '/leads/pipeline', label: 'Pipeline', icon: Kanban, role: 'viewer' },
 ]
 
 /** A sidebar section whose items fold away: open while you're on one of its pages, or when clicked. */
@@ -98,7 +96,6 @@ export function AppSidebar() {
   const [help, setHelp] = useState(false)
   const brand = useFoldingSection('/brand')
   const leads = useFoldingSection('/leads')
-  const sales = useFoldingSection('/sales')
   const fromCalendar = new URLSearchParams(search).get('from') === 'calendar'
   const isActive = (to: string) => {
     if (to === '/') return pathname === '/'
@@ -163,8 +160,7 @@ export function AppSidebar() {
         {(
           [
             ['Brand', brand, BRAND, counts.brand],
-            ['Leads', leads, LEADS, counts.leads],
-            ['Sales', sales, SALES, counts.sales],
+            ['Leads & sales', leads, LEADS, counts.leads + counts.sales],
           ] as const
         ).map(([label, sec, items, count]) => (
           <SidebarGroup key={label}>

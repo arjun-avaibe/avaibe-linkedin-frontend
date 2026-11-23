@@ -217,7 +217,7 @@ function Editor({ accountId, accountName, initial }: { accountId: number; accoun
   }
 
   return (
-    <div className="mx-auto max-w-[1400px]">
+    <div className="mx-auto max-w-page">
       {/* Breadcrumb and title */}
       <nav className="mb-1 flex items-center gap-1.5 text-sm text-muted-foreground" aria-label="Breadcrumb">
         {(initial || params.get('from') === 'calendar') && <BackButton fallback={params.get('from') === 'calendar' ? '/calendar' : '/publishing'} />}

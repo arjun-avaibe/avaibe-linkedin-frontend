@@ -5,7 +5,7 @@ import { CalendarPage } from '@/pages/calendar'
 import { DashboardPage } from '@/pages/dashboard'
 import { DataPage } from '@/pages/data'
 import { ImportPage } from '@/pages/import'
-import { LeadSuggestionsPage, LeadsLogPage, PipelinePage, SalesSuggestionsPage } from '@/pages/leads'
+import { LeadSuggestionsPage, LeadsLogPage, PipelinePage } from '@/pages/leads'
 import { LinkedInPage } from '@/pages/linkedin'
 import { NewPostPage } from '@/pages/post-new'
 import { PostDetailPage } from '@/pages/post-detail'
@@ -42,9 +42,11 @@ export default function App() {
           <Route path="leads" element={<Navigate to="/leads/log" replace />} />
           <Route path="leads/suggestions" element={<LeadSuggestionsPage />} />
           <Route path="leads/log" element={<LeadsLogPage />} />
-          <Route path="sales" element={<Navigate to="/sales/pipeline" replace />} />
-          <Route path="sales/suggestions" element={<SalesSuggestionsPage />} />
-          <Route path="sales/pipeline" element={<PipelinePage />} />
+          <Route path="leads/pipeline" element={<PipelinePage />} />
+          {/* Sales merged into Leads & sales: old addresses */}
+          <Route path="sales" element={<Navigate to="/leads/pipeline" replace />} />
+          <Route path="sales/suggestions" element={<Navigate to="/leads/suggestions" replace />} />
+          <Route path="sales/pipeline" element={<Navigate to="/leads/pipeline" replace />} />
           <Route path="suggestions" element={<Navigate to="/suggestions/content" replace />} />
           <Route path="suggestions/:area" element={<SuggestionsPage />} />
           <Route path="linkedin" element={<LinkedInPage />} />

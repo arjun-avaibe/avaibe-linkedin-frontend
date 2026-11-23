@@ -63,7 +63,8 @@ export const AREAS: { id: AreaId; label: string; icon: LucideIcon; intro: string
 ]
 
 /** Areas with their own sidebar section (and suggestions page there), kept out of the shared Suggestions list */
-export const OWN_SECTION: Partial<Record<AreaId, string>> = { brand: '/brand', leads: '/leads', sales: '/sales' }
+// Leads and Sales share one section (Leads & sales): one suggestions page shows both
+export const OWN_SECTION: Partial<Record<AreaId, string>> = { brand: '/brand', leads: '/leads', sales: '/leads' }
 
 /** Where an area's suggestions page lives */
 export function areaPath(area: AreaId): string {

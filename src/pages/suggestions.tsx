@@ -62,15 +62,22 @@ export function SuggestionsPage() {
   return <AreaPage key={def.id} areaId={def.id} />
 }
 
-/** One area's suggestions. eyebrow/title let other sections (e.g. Brand) show the same page under their own name. */
-export function AreaPage({ areaId, eyebrow = 'Suggestions', title }: { areaId: AreaId; eyebrow?: string; title?: string }) {
+/** One area's suggestions. eyebrow/title let other sections (e.g. Brand) show the same page under their own name;
+ *  `also` adds other areas' suggestions to the same list (Leads & sales shows lead and sales ideas together). */
+export function AreaPage({ areaId, also = [], eyebrow = 'Suggestions', title, description }: {
+  areaId: AreaId
+  also?: AreaId[]
+  eyebrow?: string
+  title?: string
+  description?: string
+}) {
   const def = AREAS.find((a) => a.id === areaId)!
   const { account } = useAccount()
   const { items, suggestions, ideas, isLoading } = useSuggestionItems(account?.id)
   const [showAll, setShowAll] = useState(false)
   const [showClosed, setShowClosed] = useState(false)
 
-  const mine = items.filter((it) => it.area === areaId)
+  const mine = items.filter((it) => it.area === areaId || also.includes(it.area))
   const { data: similar } = useSimilarPosts(account?.id, mine)
   const doing = mine.filter((it) => itemState(it.decision?.status) === 'doing')
   const open = mine.filter((it) => itemState(it.decision?.status) === 'open')
@@ -83,8 +90,8 @@ export function AreaPage({ areaId, eyebrow = 'Suggestions', title }: { areaId: A
 
   return (
     <SimilarCtx.Provider value={similar}>
-    <div className="mx-auto max-w-4xl space-y-5">
-      <PageHeader eyebrow={eyebrow} title={title ?? def.label} description={def.intro} />
+    <div className="mx-auto max-w-page space-y-5">
+      <PageHeader eyebrow={eyebrow} title={title ?? def.label} description={description ?? def.intro} />
 
       {usesData && suggestions && suggestions.baseline != null && (
         <p className="text-xs text-muted-foreground">
@@ -598,7 +605,7 @@ function GenerateBar({ accountId, state }: { accountId: number; state: IdeasStat
 function PlannedFeatures() {
   const { data: claude } = useClaudeStatus()
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <div className="mx-auto max-w-page space-y-5">
       <PageHeader
         eyebrow="Suggestions"
         title="Planned features"

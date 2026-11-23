@@ -149,7 +149,7 @@ export function PostsPage({ embedded = false, range: outerRange }: { embedded?: 
   }
 
   return (
-    <div className={embedded ? '' : 'mx-auto max-w-7xl'}>
+    <div className={embedded ? '' : 'mx-auto max-w-page'}>
       {!embedded && <PageHeader
         title="Posts"
         description="Every post with its numbers so far. “vs typical” compares each post with this account’s usual post at the same age."

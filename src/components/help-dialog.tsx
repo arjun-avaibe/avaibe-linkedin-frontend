@@ -14,7 +14,7 @@ const SECTIONS: { title: string; items: [string, string][] }[] = [
       ['Suggestions', 'What to post next: topics, formats, timing and calls to action, from your own numbers and, when you click Generate ideas, from Claude.'],
       ['Calendar', 'Posts, holidays and events by day, with the best times to post. Click a day to plan a post for it.'],
       ['Publishing', 'Every post, unpublished, scheduled or published. New post opens the editor: write and check it (the AI, Analyse and Chat, only runs when you click), then approve to preview and publish now or at its time. Hand-posted formats are marked as posted.'],
-      ['Brand · Leads · Sales', 'Suggestions for each, plus Competitors, the Leads log and the Pipeline. Leads are entered by the team: LinkedIn doesn’t share enquiries.'],
+      ['Brand · Leads & sales', 'Brand: suggestions and Competitors. Leads & sales: suggestions, the Leads log and the Pipeline (the same leads, by stage). Leads are entered by the team: LinkedIn doesn’t share enquiries.'],
     ],
   },
   {

@@ -47,7 +47,7 @@ export function CompetitorsPage() {
     save.mutate({ competitors: next }, { onSuccess: () => toast.success(msg), onError: (e) => toast.error(e.message) })
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-page">
       <PageHeader
         eyebrow="Brand"
         title="Competitors"
