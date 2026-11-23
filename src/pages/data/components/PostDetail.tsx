@@ -12,6 +12,7 @@ import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
 import { CHECKPOINTS, type Checkpoint, type Post } from '@/lib/api'
 import { FORMAT_LABELS, fmtNumber, fmtPct, metricLabel } from '@/lib/format'
+import { CompareWithPost } from './CompareWithPost'
 import { Detail } from './Detail'
 import { AudienceSection } from './PostAudienceSection'
 import { SnapshotDialog } from './SnapshotDialog'
@@ -56,6 +57,7 @@ export function PostDetail({ post }: { post: Post }) {
         }
         actions={
           <>
+            <CompareWithPost post={post} />
             {post.post_url && (
               <a href={post.post_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm underline">
                 Open on LinkedIn <ExternalLink className="size-3.5" />
