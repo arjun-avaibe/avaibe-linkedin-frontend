@@ -32,6 +32,7 @@ import type {
   PlannedPostInput,
   Post,
   PostAssistRun,
+  ComparePostsRun,
   PostInput,
   SimilarResponse,
   Snapshot,
@@ -324,6 +325,11 @@ export async function getPostAssistStatus(accountId: number): Promise<{ configur
 
 export async function analysePost({ body, attachment }: { body: PostAssistBody; attachment?: File | null }): Promise<PostAssistRun> {
   const res = await axiosAuth.post(API_ENDPOINTS.AI.POST_ASSIST, attachment ? withAttachment(body, attachment) : body)
+  return res.data
+}
+
+export async function comparePosts(body: { account_id: number; post_ids: number[]; checkpoint: Checkpoint }): Promise<ComparePostsRun> {
+  const res = await axiosAuth.post(API_ENDPOINTS.AI.COMPARE_POSTS, body)
   return res.data
 }
 

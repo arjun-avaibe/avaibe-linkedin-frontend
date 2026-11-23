@@ -383,6 +383,7 @@ export interface PostSummary {
   hashtags: string[]
   caption: string | null
   notes: string | null
+  goal?: PostGoal | null
 }
 
 export const DIMENSIONS = ['location', 'industry', 'seniority', 'job_title', 'job_function', 'company_size', 'company'] as const
@@ -662,6 +663,13 @@ export interface ExportFileResult {
   demographic_status?: 'new' | 'changed' | 'unchanged'
 }
 
+export interface CompareExplanation {
+  summary: string
+  reasons: { reason: string; confidence: 'high' | 'medium' | 'low' }[]
+  try_next: string[]
+  caveats: string[]
+}
+
 export interface VisualPrompt {
   prompt: string
   settings: string[]
@@ -697,6 +705,8 @@ export interface PostAssistRun {
   result: PostAssistResult
   created_at: string
 }
+
+export type ComparePostsRun = Omit<PostAssistRun, 'result'> & { result: CompareExplanation }
 
 export interface ChatTurn {
   message: string

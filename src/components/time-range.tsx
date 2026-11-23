@@ -54,7 +54,8 @@ function label(r: TimeRange): string {
   return f ? `From ${format(f, 'd MMM yyyy')}` : `Until ${format(t!, 'd MMM yyyy')}`
 }
 
-export function TimeRangePicker({ value, onChange }: { value: TimeRange; onChange: (r: TimeRange) => void }) {
+/** bare: just the button, without the "Time range" text beside it (the button itself says the period) */
+export function TimeRangePicker({ value, onChange, bare = false }: { value: TimeRange; onChange: (r: TimeRange) => void; bare?: boolean }) {
   const [open, setOpen] = useState(false)
   const today = new Date()
   // Dates being picked in the calendar, applied only on "Apply"
@@ -84,9 +85,9 @@ export function TimeRangePicker({ value, onChange }: { value: TimeRange; onChang
 
   return (
     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-      <span>Time range</span>
+      {!bare && <span>Time range</span>}
       <Popover open={open} onOpenChange={openChange}>
-        <PopoverTrigger render={<Button variant="outline" size="sm" className="h-8 gap-2 font-normal text-foreground" />}>
+        <PopoverTrigger render={<Button variant="outline" size="sm" aria-label={bare ? `Time range: ${label(value)}` : undefined} className="h-8 gap-2 font-normal text-foreground" />}>
           <CalendarDays className="size-4 text-muted-foreground" />
           {label(value)}
           <ChevronDown className="size-3.5 text-muted-foreground" />

@@ -6,6 +6,8 @@ import type {
   AudienceRow,
   ChatTurn,
   Checkpoint,
+  CompareExplanation,
+  ComparePostsRun,
   CheckpointQ,
   DecisionStatus,
   ExportImportResult,
@@ -809,6 +811,29 @@ export async function getPostAssistStatus(_accountId: number) {
 
 export async function analysePost({ body }: { body: PostAssistBody; attachment?: File | null }): Promise<PostAssistRun> {
   return saved(aiRun(assist(body)) as PostAssistRun)
+}
+
+export async function comparePosts(body: { account_id: number; post_ids: number[]; checkpoint: Checkpoint }): Promise<ComparePostsRun> {
+  const d = db()
+  const posts = body.post_ids.map(findPost).filter((p): p is StoredPost => !!p).map((p) => A.toPost(d, p))
+  if (posts.length < 2) return fail(400, 'Pick at least two posts')
+  const imp = (p: Post) => p.snapshots.find((s) => s.checkpoint === body.checkpoint)?.impressions ?? 0
+  const [win, ...rest] = [...posts].sort((a, b) => imp(b) - imp(a))
+  const ref = (p: Post) => p.ref ?? `Post ${p.id}`
+  const other = rest[0]
+  const reasons: CompareExplanation['reasons'] = []
+  if (win.format !== other.format) reasons.push({ reason: `${ref(win)} used a ${win.format} format, which tends to stop the scroll better than ${other.format} for this audience.`, confidence: 'medium' })
+  if (win.slot_uae && win.slot_uae !== other.slot_uae) reasons.push({ reason: `It went out in the ${win.slot_uae} slot (UAE), when more of your followers were online.`, confidence: 'medium' })
+  const hook = (p: Post) => (p.caption ?? '').split('\n').find((l) => l.trim()) ?? ''
+  if (hook(win).includes('?') !== hook(other).includes('?')) reasons.push({ reason: `${ref(win)} opened with ${hook(win).includes('?') ? 'a question' : 'a clear statement'}, which invited replies.`, confidence: 'low' })
+  if (!reasons.length) reasons.push({ reason: 'The posts are similar in format and timing; the topic itself likely made the difference.', confidence: 'low' })
+  const result: CompareExplanation = {
+    summary: `${ref(win)} reached more people than ${rest.map(ref).join(', ')} at the same age. The main differences are below.`,
+    reasons,
+    try_next: [`Reuse the opening style of ${ref(win)} on the next post.`, 'Change one thing at a time so the next comparison is clearer.'],
+    caveats: ['Sample data: this explanation is generated in the browser, not by Claude.'],
+  }
+  return saved(aiRun(result) as ComparePostsRun)
 }
 
 export async function getPostChatStatus(_accountId: number) {

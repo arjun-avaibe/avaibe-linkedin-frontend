@@ -55,6 +55,7 @@ const API_ENDPOINTS = {
     POST_IDEA_TO_DRAFT: (runId: number, index: number) => `/ai/ideas/${runId}/${index}/draft`,
     POST_ASSIST: '/ai/post-assist',
     POST_CHAT: '/ai/post-chat',
+    COMPARE_POSTS: '/ai/compare-posts',
   },
   LINKEDIN: {
     GET_CONFIG: '/linkedin/config',
