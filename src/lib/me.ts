@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react'
 import { ROLE_LABELS, useAuth } from '@/context/auth'
-import { initials, readProfileName } from '@/pages/profile'
+import { initials, readProfileName } from '@/pages/profile/utils'
 
 const PHOTO_KEY = 'avaibe.profilePhoto'
 const PHOTO_SIZE = 160 // px, square: plenty for a 40px avatar on a sharp screen, and small to store

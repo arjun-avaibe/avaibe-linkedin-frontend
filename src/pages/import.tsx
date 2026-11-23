@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { PageHeader, Section } from '@/components/common'
 import { useAccount } from '@/context/account'
 import { useImportCsv, useImportLinkedInExport } from '@/hooks/queries'
-import { MOCK_API, type ExportFileResult, type ExportImportResult, type ImportResult } from '@/lib/api'
+import type { ExportFileResult, ExportImportResult, ImportResult } from '@/lib/api'
 import { fmtNumber } from '@/lib/format'
 
 const KIND_LABEL: Record<string, string> = {
@@ -233,16 +233,7 @@ function CsvSection({ accountId, accountName }: { accountId?: number; accountNam
       title="App CSV template"
       description="For posts LinkedIn can't export (e.g. founder profiles) or snapshots kept elsewhere. One row = one post at one checkpoint; rows with the same post URL update that post."
     >
-      <a
-        href="/api/import/template"
-        download
-        className="inline-flex items-center gap-1.5 text-sm underline"
-        onClick={(e) => {
-          if (!MOCK_API) return
-          e.preventDefault()
-          toast.info('The CSV template is made by the backend, so it can’t be downloaded in the UI preview.')
-        }}
-      >
+      <a href="/api/import/template" download className="inline-flex items-center gap-1.5 text-sm underline">
         <Download className="size-4" /> linkedin_posts_template.csv
       </a>
       <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-muted-foreground">

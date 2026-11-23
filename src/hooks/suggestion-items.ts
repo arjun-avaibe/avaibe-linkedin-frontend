@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { Briefcase, ClipboardList, Handshake, Magnet, Megaphone, Palette, SearchCheck, type LucideIcon } from 'lucide-react'
 import { useAccount } from '@/context/account'
-import { useAccountDoc, useDecisions, useIdeas, usePosts, useSuggestions } from '@/hooks/queries'
+import { useAccountDoc, useDecisions, useIdeas, useLeads, usePosts, useSuggestions } from '@/hooks/queries'
 import type { Decision, DecisionStatus, Idea, IdeaType, Suggestion } from '@/lib/api'
 import { checklistSuggestion, inactiveSuggestion, PAGE_CHECKLIST } from '@/lib/page-checklist'
 import { leadSuggestions } from '@/lib/lead-rules'
@@ -140,7 +140,7 @@ export function useSuggestionItems(accountId: number | undefined) {
   const checklist = useAccountDoc(isCompany ? accountId : undefined, 'page_checklist')
   const posts = usePosts(accountId)
   // Lead suggestions come from the Leads log (same cache as the Leads pages)
-  const leads = useQuery({ queryKey: ['leads', accountId], queryFn: () => api.leads(accountId!), enabled: !!accountId })
+  const leads = useLeads(accountId)
 
   const items = useMemo(() => {
     const byKey = new Map((decisions.data ?? []).map((d) => [d.key, d]))

@@ -4,8 +4,11 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
+  // Sample data (no backend) in `npm run dev` and `--mode sample`; the backend in `npm run dev:api` and production.
+  // Replaced at build time, so production builds leave the sample data out entirely (see src/lib/data-source.ts).
+  define: { __SAMPLE_DATA__: JSON.stringify(mode === 'development' || mode === 'sample') },
   resolve: {
     alias: { '@': path.resolve(import.meta.dirname, './src') },
   },
@@ -21,4 +24,4 @@ export default defineConfig({
       '/static': process.env.API_TARGET ?? 'http://127.0.0.1:8000',
     },
   },
-})
+}))

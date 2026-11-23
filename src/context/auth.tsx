@@ -3,9 +3,10 @@
  * can't use, so screens stay uncluttered. Every action is checked again on the server.
  */
 import { createContext, useContext, useState, type ReactNode } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { api, ROLES, type Me, type Role } from '@/lib/api'
 import { readDemoEmail, writeDemoEmail } from '@/lib/demo-session'
+import { useMe } from '@/pages/auth/queries'
 
 interface AuthCtx {
   me: Me | undefined
@@ -27,7 +28,7 @@ const Ctx = createContext<AuthCtx | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const qc = useQueryClient()
-  const { data: me, isLoading, error } = useQuery({ queryKey: ['auth', 'me'], queryFn: api.me, staleTime: 5 * 60_000, retry: 0 })
+  const { data: me, isLoading, error } = useMe()
   const user = me?.user ?? null
   const [demoEmail, setDemoEmail] = useState<string | null>(readDemoEmail)
   const enabled = !!me?.enabled
