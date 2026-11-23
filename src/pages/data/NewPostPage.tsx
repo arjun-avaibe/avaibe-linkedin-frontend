@@ -2,9 +2,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { PageHeader } from '@/components/common'
-import { PostForm } from '@/components/post-form'
+import { PostForm } from '@/pages/data/components/PostForm'
 import { useAccount } from '@/context/account'
-import { useSavePost } from '@/hooks/queries'
+import { useSavePost } from '@/pages/data/queries'
 
 export function NewPostPage() {
   const { account } = useAccount()

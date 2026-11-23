@@ -1,38 +1,23 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
-import { ClipboardList, Trash2, TrendingUp } from 'lucide-react'
+import { Trash2, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ChartContainer, ChartLegend, ChartLegendContent, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AudienceEditor, parseNum, type EditorRow } from '@/components/audience-editor'
 import { EmptyState, PageHeader, Section, SimpleSelect } from '@/components/common'
 import { useAccount } from '@/context/account'
-import { nowZonedInput, useTz } from '@/context/timezone'
-import { useDeletePageAudience, usePageAudience, useSavePageAudience } from '@/hooks/queries'
 import { fmtNumber, fmtPct } from '@/lib/format'
-
-type AudienceType = 'followers' | 'visitors'
-
-const chartConfig = {
-  uae: { label: 'UAE', color: 'var(--chart-1)' },
-  education: { label: 'Education', color: 'var(--chart-2)' },
-  decision: { label: 'Decision-makers', color: 'var(--chart-3)' },
-} satisfies ChartConfig
-const SERIES = ['uae', 'education', 'decision'] as const
-
-function todayIn(zone: string): string {
-  return nowZonedInput(zone).slice(0, 10)
-}
+import { RecordSnapshot } from './components/RecordSnapshot'
+import { chartConfig, SERIES, type AudienceType } from './constants/audience'
+import { useDeletePageAudience, useGetPageAudience } from '@/pages/data/queries'
 
 /** embedded: shown as the Audience tab of the Data page (no page title of its own) */
 export function AudiencePage({ embedded = false, fixed }: { embedded?: boolean; fixed?: AudienceType }) {
   const { account } = useAccount()
   const [chosen, setView] = useState<AudienceType>('followers')
   const view = fixed ?? chosen
-  const { data = [] } = usePageAudience(account?.id)
+  const { data = [] } = useGetPageAudience(account?.id)
   const del = useDeletePageAudience(account?.id ?? 0)
   const series = data.filter((d) => d.audience === view)
   const chartData = series.map((d) => ({
@@ -153,66 +138,5 @@ export function AudiencePage({ embedded = false, fixed }: { embedded?: boolean; 
 
       {account && <RecordSnapshot accountId={account.id} defaultType={view} />}
     </div>
-  )
-}
-
-function RecordSnapshot({ accountId, defaultType }: { accountId: number; defaultType: AudienceType }) {
-  const tz = useTz()
-  const [asOf, setAsOf] = useState(() => todayIn(tz.zone))
-  const [type, setType] = useState<AudienceType>(defaultType)
-  const [total, setTotal] = useState('')
-  const [rows, setRows] = useState<EditorRow[]>([])
-  const save = useSavePageAudience(accountId)
-
-  const submit = () => {
-    if (!rows.length) return toast.error('Add at least one row')
-    const parsed = rows.map((r) => ({ dimension: r.dimension, value: r.value.trim(), count: parseNum(r.count), pct: parseNum(r.pct) }))
-    if (parsed.some((r) => !r.value || (r.count === null && r.pct === null) || Number.isNaN(r.count) || Number.isNaN(r.pct))) {
-      return toast.error('Every row needs a value and a count or percentage')
-    }
-    save.mutate(
-      { as_of: asOf, audience: type, total: parseNum(total), rows: parsed },
-      {
-        onSuccess: () => {
-          toast.success(`Saved ${type} snapshot for ${asOf}`)
-          setRows([])
-          setTotal('')
-        },
-        onError: (e) => toast.error(e.message),
-      },
-    )
-  }
-
-  return (
-    <Section icon={ClipboardList}
-      title="Record a snapshot"
-      description="From the page admin view go to Analytics → Followers (or Visitors) and copy the location, industry and seniority breakdowns. Counts are better than percentages when LinkedIn shows them. Saving the same date again replaces it."
-    >
-      <div className="space-y-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <Label className="mb-1.5 block">Date</Label>
-            <Input type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} className="w-40" />
-          </div>
-          <SimpleSelect
-            label="Audience"
-            value={type}
-            onChange={(v) => setType(v as AudienceType)}
-            options={[
-              { value: 'followers', label: 'Followers' },
-              { value: 'visitors', label: 'Page visitors' },
-            ]}
-          />
-          <div>
-            <Label className="mb-1.5 block">Total {type}</Label>
-            <Input inputMode="numeric" value={total} onChange={(e) => setTotal(e.target.value)} className="w-32" placeholder="e.g. 240" />
-          </div>
-        </div>
-        <AudienceEditor rows={rows} onChange={setRows} withCount />
-        <Button onClick={submit} disabled={save.isPending}>
-          {save.isPending ? 'Saving…' : 'Save snapshot'}
-        </Button>
-      </div>
-    </Section>
   )
 }

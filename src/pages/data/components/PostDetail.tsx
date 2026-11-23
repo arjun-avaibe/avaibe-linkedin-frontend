@@ -1,42 +1,24 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ExternalLink, FileText, LineChart, Pencil, Trash2, Users } from 'lucide-react'
+import { ExternalLink, FileText, LineChart, Pencil, Trash2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { AudienceEditor, parseNum, toEditorRows, type EditorRow } from '@/components/audience-editor'
-import { EmptyState, PageHeader, PostRef, Section, ShareSummary } from '@/components/common'
-import { PostForm } from '@/components/post-form'
+import { PageHeader, PostRef, Section } from '@/components/common'
+import { PostForm } from '@/pages/data/components/PostForm'
 import { useAuth } from '@/context/auth'
 import { useTz } from '@/context/timezone'
-import { useDeletePost, useDeleteSnapshot, usePost, useSaveAudience, useSaveSnapshot, useSavePost } from '@/hooks/queries'
-import { CHECKPOINTS, METRIC_FIELDS, type Checkpoint, type MetricField, type Post, type PostFormat } from '@/lib/api'
+import { CHECKPOINTS, type Checkpoint, type Post } from '@/lib/api'
 import { FORMAT_LABELS, fmtNumber, fmtPct, metricLabel } from '@/lib/format'
+import { Detail } from './Detail'
+import { AudienceSection } from './PostAudienceSection'
+import { SnapshotDialog } from './SnapshotDialog'
+import { COMMON, EXTRA, CHECKPOINT_HOURS } from '../constants/post-detail'
+import { useDeletePost, useSavePost } from '@/pages/data/queries'
 
-// Fields shown for every format, plus the format-specific ones
-const COMMON: MetricField[] = ['impressions', 'members_reached', 'reactions', 'comments', 'reposts', 'clicks', 'followers_gained']
-const EXTRA: Partial<Record<PostFormat, MetricField[]>> = {
-  video: ['video_views'],
-  poll: ['poll_votes'],
-  newsletter: ['newsletter_views', 'newsletter_subscribers'],
-}
-
-const CHECKPOINT_HOURS: Record<Checkpoint, number> = { '1h': 1, '6h': 6, '24h': 24, '48h': 48, '7d': 168 }
-
-export function PostDetailPage() {
-  const id = Number(useParams().id)
-  const { data: post, isLoading, error } = usePost(id)
-  if (isLoading) return <Skeleton className="mx-auto h-96 max-w-6xl" />
-  if (error || !post) return <EmptyState>Post not found. <Link to="/posts" className="underline">Back to posts</Link></EmptyState>
-  return <PostDetail post={post} />
-}
-
-function PostDetail({ post }: { post: Post }) {
+export function PostDetail({ post }: { post: Post }) {
   const tz = useTz()
   const canEdit = useAuth().can('editor')
   const [params] = useSearchParams()
@@ -251,149 +233,5 @@ function PostDetail({ post }: { post: Post }) {
         </DialogContent>
       </Dialog>
     </div>
-  )
-}
-
-function AudienceSection({ post }: { post: Post }) {
-  const tz = useTz()
-  const canEdit = useAuth().can('editor')
-  const [rows, setRows] = useState<EditorRow[]>(() => toEditorRows(post.audience))
-  const save = useSaveAudience(post.id, post.account_id)
-  // Prefer the 7d snapshot for estimates (closest to the post's final audience), else the latest one
-  const snap = post.snapshots.find((s) => s.checkpoint === '7d') ?? post.snapshots[post.snapshots.length - 1]
-
-  const submit = () => {
-    const bad = rows.find((r) => !r.value.trim() || parseNum(r.pct) === null || Number.isNaN(parseNum(r.pct)))
-    if (bad) {
-      toast.error('Every row needs a value and a percentage')
-      return
-    }
-    save.mutate(
-      rows.map((r) => ({ dimension: r.dimension, value: r.value.trim(), pct: parseNum(r.pct)! })),
-      { onSuccess: () => toast.success('Audience saved'), onError: (e) => toast.error(e.message) },
-    )
-  }
-
-  return (
-    <Section icon={Users}
-      className="mt-4"
-      title="Who saw this post"
-      description={
-        <>
-          Copy the audience breakdown from LinkedIn's post analytics (location, industry, seniority…), ideally at 7 days. LinkedIn
-          lists only top values, so shares are minimums (≥).
-          {post.audience_captured_at && <> Last saved {tz.dateTime(post.audience_captured_at)} {tz.label}.</>}
-        </>
-      }
-    >
-      <div className="space-y-4">
-        <ShareSummary shares={post.shares} impressions={snap?.impressions} />
-        {snap?.impressions != null && (
-          <p className="text-xs text-muted-foreground">Estimates use {snap.checkpoint} impressions × share.</p>
-        )}
-        {canEdit && (
-          <>
-            <AudienceEditor rows={rows} onChange={setRows} />
-            <Button onClick={submit} disabled={save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save audience'}
-            </Button>
-          </>
-        )}
-      </div>
-    </Section>
-  )
-}
-
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5">{children ?? <span className="text-muted-foreground">—</span>}</dd>
-    </div>
-  )
-}
-
-function SnapshotDialog({ post, checkpoint, fields, onClose }: {
-  post: Post
-  checkpoint: Checkpoint
-  fields: MetricField[]
-  onClose: () => void
-}) {
-  const existing = post.snapshots.find((s) => s.checkpoint === checkpoint)
-  const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(METRIC_FIELDS.map((f) => [f, existing?.[f] != null ? String(existing[f]) : ''])),
-  )
-  const [notes, setNotes] = useState(existing?.notes ?? '')
-  const save = useSaveSnapshot(post.id, post.account_id)
-  const remove = useDeleteSnapshot(post.id, post.account_id)
-
-  const submit = (e: FormEvent) => {
-    e.preventDefault()
-    const body: Record<string, number | string | null> = { notes: notes.trim() || null }
-    for (const f of METRIC_FIELDS) {
-      const v = values[f].replace(/,/g, '').trim()
-      body[f] = v === '' ? null : Number(v)
-    }
-    save.mutate(
-      { checkpoint, body },
-      {
-        onSuccess: () => {
-          toast.success(`${checkpoint} snapshot saved`)
-          onClose()
-        },
-        onError: (err) => toast.error(err.message),
-      },
-    )
-  }
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{checkpoint} snapshot</DialogTitle>
-          <DialogDescription>
-            Numbers as LinkedIn shows them {checkpoint} after publishing. The capture time is recorded automatically.
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            {fields.map((f) => (
-              <div key={f}>
-                <Label className="mb-1 block text-xs">{metricLabel(f)}</Label>
-                <Input
-                  inputMode="numeric"
-                  pattern="[0-9,]*"
-                  value={values[f]}
-                  onChange={(e) => setValues({ ...values, [f]: e.target.value })}
-                />
-              </div>
-            ))}
-          </div>
-          <div>
-            <Label className="mb-1 block text-xs">Notes</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. captured 2h late" />
-          </div>
-          <DialogFooter>
-            {existing && (
-              <Button
-                type="button"
-                variant="outline"
-                className="mr-auto"
-                disabled={remove.isPending}
-                onClick={() => remove.mutate(checkpoint, { onSuccess: onClose, onError: (e) => toast.error(e.message) })}
-              >
-                Remove snapshot
-              </Button>
-            )}
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }

@@ -10,10 +10,11 @@ export const useGetCalendar = (accountId: number | undefined, from: string, to: 
   })
 }
 
-export const useGetCalendarItems = (from: string, to: string) => {
+export const useGetCalendarItems = (from: string, to: string, enabled = true) => {
   return useQuery({
     queryKey: ['calendar-items', from, to],
     queryFn: () => getCalendarItems({ from, to }),
     staleTime: 60 * 60_000,
+    enabled,
   })
 }

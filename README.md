@@ -62,9 +62,6 @@ With `npm run dev` (and `build:sample`) Vite points `@/lib/api` at `src/sample-d
 hooks are identical in both modes. `src/sample-data/matches-api.ts` makes the type check fail if the sample
 functions ever stop matching the real ones.
 
-Dashboard and Data (`pages/dashboard.tsx`, `pages/data.tsx` and the pages they include) still use the older flat
-layout and the hook names in `hooks/queries.ts`; they move into folders when that work is finished.
-
 ## Host on Vercel
 
 1. vercel.com → **Add New → Project** → choose this repository (framework: Vite, detected; no root directory needed).

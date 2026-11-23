@@ -412,10 +412,3 @@ export function getPlannedMediaUrl(id: number): string {
   return `${BASE_URL}${API_ENDPOINTS.PLANNER.MEDIA(id)}`
 }
 
-// ---------------------------- Older screens (Dashboard, Data) call api.x() ---------------- //
-
-export const api = {
-  leads: getLeads,
-  lastImports: getLastImports,
-  calendarItems: getCalendarItems,
-}

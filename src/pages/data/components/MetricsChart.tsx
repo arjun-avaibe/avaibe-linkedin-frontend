@@ -3,86 +3,19 @@
  * plus what LinkedIn doesn't do: small-number honesty, post markers and holidays on the chart, and a
  * "what happened that day" explainer for spikes and dips.
  */
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { Area, CartesianGrid, ComposedChart, ReferenceArea, XAxis, YAxis } from 'recharts'
-import { addDays, differenceInCalendarDays, endOfMonth, format, parseISO } from 'date-fns'
-import { ArrowDownRight, ArrowRight, ArrowUpRight, CalendarDays, ChevronDown, Globe, LineChart, Sparkles } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { CalendarDays, LineChart } from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@/components/ui/chart'
-import { api, type CalendarItem, type PageAudienceSnapshot, type PageDay, type Post } from '@/lib/api'
-import { FORMAT_LABELS, fmtNumber, fmtPct } from '@/lib/format'
-import { engagementOf, totals, ymd, type Totals } from '@/components/period'
+import { type CalendarItem, type PageDay, type Post } from '@/lib/api'
+import { FORMAT_LABELS, fmtNumber } from '@/lib/format'
+import { ymd } from '@/components/period'
 import { cn } from '@/lib/utils'
-import { CardHeading, IconTile } from '@/components/common'
-
-// ---------------------------------------------------------------- Highlights
-
-export interface Highlight {
-  label: string
-  value: number | null
-  prev?: number | null
-  /** A rate (0..1): the change is shown in percentage points */
-  pct?: boolean
-  /** Too little behind the number for a change to mean anything (counts decide this themselves) */
-  small?: boolean
-  hint?: string
-}
-
-/** Below this, a count's % change is mostly noise (2 → 4 comments is "+100%") */
-const SMALL_COUNT = 20
-
-function changeLine(h: Highlight, compareLabel: string): { text: string; dir: 'up' | 'down' | 'flat' | 'none' } {
-  if (h.value == null) return { text: 'Not in your data yet', dir: 'none' }
-  if (h.prev == null) return { text: 'No earlier period to compare', dir: 'none' }
-  const small = h.small ?? (!h.pct && Math.max(h.value, h.prev) < SMALL_COUNT)
-  if (small) return { text: 'Too few to compare', dir: 'none' }
-  if (h.pct) {
-    const d = (h.value - h.prev) * 100
-    return { text: `${d >= 0 ? '+' : ''}${d.toFixed(1)} pt ${compareLabel}`, dir: Math.abs(d) < 0.1 ? 'flat' : d > 0 ? 'up' : 'down' }
-  }
-  if (!h.prev) return { text: `up from 0 ${compareLabel}`, dir: 'up' }
-  const r = h.value / h.prev - 1
-  return { text: `${r >= 0 ? '+' : ''}${(r * 100).toFixed(0)}% ${compareLabel}`, dir: Math.abs(r) < 0.02 ? 'flat' : r > 0 ? 'up' : 'down' }
-}
-
-export function Highlights({ items, dates, compareLabel, summary }: { items: Highlight[]; dates: ReactNode; compareLabel: string; summary?: ReactNode }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardHeading icon={Sparkles} title="Highlights" sub={dates} />
-      </CardHeader>
-      <CardContent>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
-          {items.map((h) => {
-            const c = changeLine(h, compareLabel)
-            const Icon = c.dir === 'up' ? ArrowUpRight : c.dir === 'down' ? ArrowDownRight : c.dir === 'flat' ? ArrowRight : null
-            return (
-              <div key={h.label}>
-                <dd className="text-[30px] leading-none font-medium tracking-tight tabular-nums">{h.value == null ? '—' : h.pct ? fmtPct(h.value) : fmtNumber(h.value)}</dd>
-                <dt className="mt-0.5 text-sm text-muted-foreground">{h.label}</dt>
-                <div
-                  className={cn(
-                    'mt-1 inline-flex items-center gap-0.5 text-xs tabular-nums',
-                    c.dir === 'up' ? 'text-good-fg' : c.dir === 'down' ? 'text-bad-fg' : 'text-muted-foreground',
-                  )}
-                >
-                  {Icon && <Icon className="size-3.5" />}
-                  {c.text}
-                </div>
-                {h.hint && <div className="mt-0.5 text-[11px] text-muted-foreground">{h.hint}</div>}
-              </div>
-            )
-          })}
-        </dl>
-        {summary && <p className="mt-5 border-t pt-4 text-sm">{summary}</p>}
-      </CardContent>
-    </Card>
-  )
-}
-
-// ---------------------------------------------------------------- Metrics chart with post markers, holidays and an explainer
+import { CardHeading } from '@/components/common'
+import { useGetCalendarItems } from '@/pages/calendar/queries'
 
 export interface ChartMetric {
   value: string
@@ -91,22 +24,16 @@ export interface ChartMetric {
 }
 
 const MARKER_KINDS = new Set(['uae_holiday', 'period', 'event'])
+
 const MARKER_COLOR: Record<string, string> = { uae_holiday: 'var(--cal-uae)', period: 'var(--cal-period)', event: 'var(--cal-event)' }
 
 const chartConfig = { value: { label: 'Value', color: 'var(--chart-current)' } } satisfies ChartConfig
 
 const postDate = (p: Post) => p.published_at_uae.slice(0, 10)
-const postTitle = (p: Post) => p.caption?.split('\n').find((l) => l.trim())?.trim() || p.topic || p.ref || `Post ${p.id}`
-const postImpressions = (p: Post) => p.snapshots[p.snapshots.length - 1]?.impressions ?? null
 
-function useCalendarItems(from: string, to: string) {
-  return useQuery({
-    queryKey: ['calendar-items', from, to],
-    queryFn: () => api.calendarItems({ from, to }),
-    staleTime: 60 * 60_000,
-    enabled: differenceInCalendarDays(parseISO(to), parseISO(from)) <= 400,
-  })
-}
+const postTitle = (p: Post) => p.caption?.split('\n').find((l) => l.trim())?.trim() || p.topic || p.ref || `Post ${p.id}`
+
+const postImpressions = (p: Post) => p.snapshots[p.snapshots.length - 1]?.impressions ?? null
 
 interface Point {
   key: string // first day of the bucket, YYYY-MM-DD
@@ -140,7 +67,7 @@ export function MetricsChart({
   const metric = metrics.find((m) => m.value === params.get(param)) ?? metrics[0]
   const setMetric = (v: string) => setParams((p) => { p.set(param, v); return p }, { replace: true })
   const [picked, setPicked] = useState<string | null>(null)
-  const { data: cal } = useCalendarItems(from, to)
+  const { data: cal } = useGetCalendarItems(from, to, differenceInCalendarDays(parseISO(to), parseISO(from)) <= 400)
 
   const span = differenceInCalendarDays(parseISO(to), parseISO(from)) + 1
   const unit: 'day' | 'week' = span <= 120 ? 'day' : 'week'
@@ -421,216 +348,6 @@ function Explainer({
           Around then: {events.map((e) => e.title).join(' · ')}
         </p>
       )}
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------- Demographics (latest snapshot)
-
-const DIM_LABELS: Record<string, string> = {
-  country: 'Country',
-  location: 'Location',
-  job_function: 'Job function',
-  seniority: 'Seniority',
-  industry: 'Industry',
-  company_size: 'Company size',
-}
-const UAE = /united arab emirates|\buae\b|dubai|abu dhabi|sharjah|ajman|ras al|fujairah|umm al/i
-
-export function Demographics({ snapshot, noun }: { snapshot: PageAudienceSnapshot | undefined; noun: string }) {
-  const [dim, setDim] = useState('country')
-  const groups = useMemo(() => {
-    const out = new Map<string, { value: string; n: number; isCount: boolean }[]>()
-    if (!snapshot) return out
-    for (const r of snapshot.rows) {
-      const n = r.count ?? r.pct
-      if (n == null) continue
-      const list = out.get(r.dimension) ?? []
-      list.push({ value: r.value, n, isCount: r.count != null })
-      out.set(r.dimension, list)
-    }
-    // Countries, rolled up from LinkedIn's regions ("Greater Delhi Area, India" → India)
-    const loc = out.get('location')
-    if (loc?.length) {
-      const by = new Map<string, number>()
-      for (const r of loc) {
-        // A region without a country ("Los Angeles Metropolitan Area") can't be placed reliably
-        const c = r.value.includes(',') ? r.value.split(',').at(-1)!.trim() : UAE.test(r.value) ? 'United Arab Emirates' : 'Other (region only)'
-        by.set(c, (by.get(c) ?? 0) + r.n)
-      }
-      out.set('country', [...by].map(([value, n]) => ({ value, n, isCount: loc[0].isCount })))
-    }
-    for (const list of out.values()) list.sort((a, b) => b.n - a.n)
-    return out
-  }, [snapshot])
-
-  if (!snapshot) {
-    return (
-      <Card>
-        <CardHeader>
-          <span className="flex items-center gap-3"><IconTile icon={Globe} /><CardTitle className="text-base font-semibold">{noun[0].toUpperCase() + noun.slice(1)} demographics</CardTitle></span>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            No {noun} breakdown yet. <Link to="/import" className="underline">Import LinkedIn’s export</Link> or record one below.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  const dims = Object.keys(DIM_LABELS).filter((d) => groups.get(d)?.length)
-  const active = dims.includes(dim) ? dim : dims[0]
-  const rows = groups.get(active) ?? []
-  const total = snapshot.total
-  const geo = active === 'country' || active === 'location'
-  // The top 6, plus UAE rows further down: the target market is always shown
-  const top = [...rows.slice(0, 6), ...(geo ? rows.slice(6).filter((r) => UAE.test(r.value)).slice(0, 3) : [])]
-  const max = top[0]?.n ?? 1
-  const uaeRow = geo ? rows.filter((r) => UAE.test(r.value)) : []
-  const uaeRank = active === 'country' ? rows.findIndex((r) => UAE.test(r.value)) : -1
-
-  return (
-    <Card>
-      <CardHeader className="gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <span className="flex items-center gap-3"><IconTile icon={Globe} /><CardTitle className="text-base font-semibold">{noun[0].toUpperCase() + noun.slice(1)} demographics</CardTitle></span>
-            <div className="text-xs text-muted-foreground">
-              As of {format(parseISO(snapshot.as_of), 'd MMM yyyy')}
-              {total != null && ` · ${fmtNumber(total)} ${noun}`}
-            </div>
-          </div>
-          <div role="tablist" aria-label="Breakdown" className="flex flex-wrap gap-1 rounded-lg bg-secondary p-1">
-            {dims.map((d) => (
-              <button
-                key={d}
-                role="tab"
-                type="button"
-                aria-selected={d === active}
-                onClick={() => setDim(d)}
-                className={cn(
-                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
-                  d === active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                {DIM_LABELS[d]}
-              </button>
-            ))}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <ul className="space-y-2.5">
-          {top.map((r) => {
-            const isUae = geo && UAE.test(r.value)
-            const share = r.isCount && total ? r.n / total : r.isCount ? null : r.n / 100
-            return (
-              <li key={r.value} className="text-sm">
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className={cn('truncate', isUae && 'font-semibold')}>
-                    {r.value}
-                    {isUae && <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">Target market</span>}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-muted-foreground">
-                    {r.isCount ? fmtNumber(r.n) : `${r.n}%`}
-                    {share != null && r.isCount && <span className="ml-2 inline-block w-12 text-right">{fmtPct(share)}</span>}
-                  </span>
-                </div>
-                <div className="mt-1 h-1.5 rounded-full bg-muted">
-                  <div className={cn('h-1.5 rounded-full', isUae ? 'bg-primary' : 'bg-[var(--chart-current)] opacity-60')} style={{ width: `${(r.n / max) * 100}%` }} />
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-        {active === 'country' && (
-          <p className="mt-4 text-xs text-muted-foreground">
-            {uaeRow.length
-              ? `The UAE is #${uaeRank + 1} of ${rows.length} countries${uaeRank >= 6 ? ' (added to the list above)' : ''}. `
-              : 'No UAE locations in LinkedIn’s list. '}
-            Countries are added up from LinkedIn’s regions, and LinkedIn lists only the biggest ones, so small countries are undercounted.
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-// ---------------------------------------------------------------- month by month (when the range spans 2+ months)
-
-export function MonthlyTable({ days }: { days: PageDay[] }) {
-  const months = useMemo(() => {
-    const groups = new Map<string, PageDay[]>()
-    for (const d of days) {
-      const k = d.date.slice(0, 7)
-      groups.set(k, [...(groups.get(k) ?? []), d])
-    }
-    return [...groups.entries()].sort().map(([k, ds]) => ({ key: k, t: totals(ds), partial: ds.length < differenceInCalendarDays(endOfMonth(parseISO(`${k}-01`)), parseISO(`${k}-01`)) + 1 }))
-  }, [days])
-  if (months.length < 2) return null
-  const cols: [string, (t: Totals) => string][] = [
-    ['Impressions', (t) => fmtNumber(t.impressions)],
-    ['Unique', (t) => fmtNumber(t.unique_impressions)],
-    ['Clicks', (t) => fmtNumber(t.clicks)],
-    ['Reactions', (t) => fmtNumber(t.reactions)],
-    ['Comments', (t) => fmtNumber(t.comments)],
-    ['Reposts', (t) => fmtNumber(t.reposts)],
-    ['Engagement', (t) => fmtPct(engagementOf(t))],
-    ['Page views', (t) => fmtNumber(t.page_views)],
-    ['Visitors', (t) => fmtNumber(t.unique_visitors)],
-    ['New followers', (t) => fmtNumber(t.new_followers)],
-  ]
-  return (
-    <Card>
-      <CardHeader>
-        <CardHeading icon={CalendarDays} title="Month by month" />
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead>
-              <tr className="border-b text-left text-xs text-muted-foreground">
-                <th className="py-2 pr-3 font-medium">Month</th>
-                {cols.map(([h]) => (
-                  <th key={h} className="px-2 py-2 text-right font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {months.map((m) => (
-                <tr key={m.key} className="border-b last:border-0">
-                  <td className="py-2 pr-3 whitespace-nowrap">
-                    {format(parseISO(`${m.key}-01`), 'MMM yyyy')}
-                    {m.partial && <span className="ml-1 text-xs text-muted-foreground">(part)</span>}
-                  </td>
-                  {cols.map(([h, f]) => (
-                    <td key={h} className="px-2 py-2 text-right tabular-nums">{f(m.t)}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-
-// ---------------------------------------------------------------- Extra detail, closed until asked for
-
-/** A quiet "show more" row: detail that's useful sometimes, kept out of the way the rest of the time */
-export function More({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="rounded-2xl border bg-card shadow-sm">
-      <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center gap-3 px-4 py-3 text-left">
-        <ChevronDown className={cn('size-4 shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')} />
-        <span className="text-sm font-medium">{title}</span>
-        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
-      </button>
-      {open && <div className="space-y-4 border-t p-4">{children}</div>}
     </div>
   )
 }
