@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 const src = path.resolve(import.meta.dirname, './src')
 
 export default defineConfig(({ mode }) => {
-  const sampleData = mode === 'development' || mode === 'sample'
+  const sampleData = ['development', 'sample', 'mock'].includes(mode)
   return {
     plugins: [react(), tailwindcss()],
     define: { __SAMPLE_DATA__: JSON.stringify(sampleData) },
